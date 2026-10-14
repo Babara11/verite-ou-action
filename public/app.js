@@ -1,12 +1,26 @@
 'use strict';
-/* ============ Vérité ou Action 18+ — client ============ */
+/* ============ Vérité ou Action 18+ — client v3 ============ */
 const $ = (s) => document.querySelector(s);
 const socket = io();
 const now = () => Date.now();
 
 let S = null;              // dernier état de la room
 let myPendingCode = null;  // code en attente de validation admin
+let myName = '';           // pseudo local (pour la reconnexion)
 const feedItems = [];      // feed local
+
+/* ================= Session persistante (survit au refresh / reconnexion) ================= */
+function saveSession() {
+  try { if (S && S.code && myName) localStorage.setItem('voa_session', JSON.stringify({ code: S.code, name: myName })); } catch (e) {}
+}
+function clearSession() { try { localStorage.removeItem('voa_session'); } catch (e) {} }
+function readSession() { try { return JSON.parse(localStorage.getItem('voa_session') || 'null'); } catch (e) { return null; } }
+function tryRejoin() {
+  const sess = readSession();
+  if (!sess || !sess.code || !sess.name) return;
+  myName = sess.name;
+  socket.emit('room:rejoin', { code: sess.code, name: sess.name });
+}
 
 /* ================= i18n ================= */
 const T = {
@@ -84,6 +98,7 @@ const SYS = {
     pauseskip: (v) => `⏸️ ${v.name} est parti(e) en pause — nouveau tirage !`,
     allpaused: () => '😴 Tous les joueurs sont en pause...', gamestart: () => '🔥 C\u2019est parti !',
     admintransfer: (v) => `👑 ${v.name} devient admin`, promoted: (v) => `👑 ${v.name} est promu(e) admin`,
+    rejoined: (v) => `🔄 ${v.name} est de retour`,
   },
   en: {
     joined: (v) => `👋 ${v.name} joined the room`, left: (v) => `🚪 ${v.name} left the game`,
@@ -95,11 +110,12 @@ const SYS = {
     pauseskip: (v) => `⏸️ ${v.name} went on pause — new spin!`,
     allpaused: () => '😴 All players are on pause...', gamestart: () => '🔥 Let\u2019s go!',
     admintransfer: (v) => `👑 ${v.name} is now admin`, promoted: (v) => `👑 ${v.name} was promoted admin`,
+    rejoined: (v) => `🔄 ${v.name} is back`,
   },
 };
 const ERR = {
-  fr: { notfound: 'Salon introuvable 😕', full: 'Salon complet (6 max) 😵', expired: 'Lien expiré (> 7 min) — demande un nouveau lien ⏱️', need2: 'Il faut au moins 2 joueurs !', fullsessions: 'Serveur plein (5 sessions max) — réessaie dans un instant 🙏' },
-  en: { notfound: 'Room not found 😕', full: 'Room full (6 max) 😵', expired: 'Link expired (> 7 min) — ask for a new one ⏱️', need2: 'At least 2 players needed!', fullsessions: 'Server full (5 sessions max) — try again shortly 🙏' },
+  fr: { notfound: 'Salon introuvable ou fermé 😕', full: 'Salon complet (6 max) 😵', expired: 'Lien expiré (> 7 min) — demande un nouveau lien ⏱️', need2: 'Il faut au moins 2 joueurs !', fullsessions: 'Serveur plein (5 sessions max) — réessaie dans un instant 🙏' },
+  en: { notfound: 'Room not found or closed 😕', full: 'Room full (6 max) 😵', expired: 'Link expired (> 7 min) — ask for a new one ⏱️', need2: 'At least 2 players needed!', fullsessions: 'Server full (5 sessions max) — try again shortly 🙏' },
 };
 const tr = (k) => (T[S?.lang || 'fr'][k] ?? T.fr[k] ?? k);
 const trE = (k) => (ERR[S?.lang || 'fr'][k] ?? k);
@@ -117,20 +133,20 @@ function toast(msg, long) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), long ? 7000 : 3200);
 }
 
-/* --- Feedback visible sur les actions critiques (diagnostic + UX) --- */
+/* --- Feedback visible quand on crée/rejoint (diagnostic + UX) --- */
 let clickWatchdog = null;
-function armedFeedback(kind) {
+function armedFeedback() {
   toast('⏳ Demande envoyée au serveur...', true);
   clearTimeout(clickWatchdog);
   clickWatchdog = setTimeout(() => {
     if (S) return; // un salon est actif = succès
     toast(socket.connected
       ? '❌ Le serveur ne répond pas. Attends 10s et réessaie (ou recharge la page).'
-      : '❌ Connexion au serveur perdue — recharge la page (Ctrl+Shift+R).', true);
+      : '❌ Connexion perdue — recharge la page (Ctrl+Shift+R).', true);
   }, 6000);
 }
 
-/* ================= État de connexion (affiché sur l'accueil) ================= */
+/* ================= État de connexion (badge accueil) ================= */
 function setConn(state) {
   const card = document.querySelector('.home-card');
   if (!card) return;
@@ -141,11 +157,14 @@ function setConn(state) {
     d.style.cssText = 'font-size:13px;font-weight:700;';
     card.prepend(d);
   }
-  if (state === 'ok') { d.textContent = '🟢 Connecté au serveur'; d.style.color = 'var(--ok)'; }
-  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — rafraîchis la page'; d.style.color = 'var(--hot)'; }
-  else { d.textContent = '🟡 Connexion au serveur...'; d.style.color = 'var(--warn)'; }
+  if (state === 'ok') { d.textContent = '🟢 Connecté · v3'; d.style.color = 'var(--ok)'; }
+  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v3'; d.style.color = 'var(--hot)'; }
+  else { d.textContent = '🟡 Connexion... · v3'; d.style.color = 'var(--warn)'; }
 }
-socket.on('connect', () => setConn('ok'));
+socket.on('connect', () => {
+  setConn('ok');
+  if (!S) tryRejoin();               // refresh ou reconnexion : on reprend notre place
+});
 socket.on('connect_error', () => setConn('err'));
 socket.io.on('reconnect', () => setConn('ok'));
 setConn(socket.connected ? 'ok' : 'connecting');
@@ -156,22 +175,30 @@ function check18() {
   return true;
 }
 $('#btn-create').addEventListener('click', () => {
-  if (!check18()) return;
-  const name = $('#in-name').value.trim();
-  if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
-  socket.emit('room:create', { name, lang: 'fr', theme: 'neon', difficulty: 2 });
+  try {
+    if (!check18()) return;
+    const name = $('#in-name').value.trim();
+    if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
+    myName = name;
+    armedFeedback();
+    socket.emit('room:create', { name, lang: 'fr', theme: 'neon', difficulty: 2 });
+  } catch (err) { toast('⚠️ Erreur: ' + err.message, true); }
 });
 $('#btn-join').addEventListener('click', () => {
-  if (!check18()) return;
-  const name = $('#in-name').value.trim();
-  const code = $('#in-code').value.trim().toUpperCase();
-  if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
-  if (code.length < 4) { $('#in-code').focus(); toast(tr('needcode')); return; }
-  myPendingCode = code;
-  socket.emit('room:join', { name, code });
+  try {
+    if (!check18()) return;
+    const name = $('#in-name').value.trim();
+    const code = $('#in-code').value.trim().toUpperCase();
+    if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
+    if (code.length < 4) { $('#in-code').focus(); toast(tr('needcode')); return; }
+    myName = name;
+    myPendingCode = code;
+    armedFeedback();
+    socket.emit('room:join', { name, code });
+  } catch (err) { toast('⚠️ Erreur: ' + err.message, true); }
 });
 $('#btn-wait-cancel').addEventListener('click', () => { myPendingCode = null; showScreen('screen-home'); });
-$('#btn-back-home').addEventListener('click', () => location.reload());
+$('#btn-back-home').addEventListener('click', () => { clearSession(); location.reload(); });
 
 /* Lien d'invitation #join/CODE */
 if (location.hash.startsWith('#join/')) {
@@ -179,9 +206,13 @@ if (location.hash.startsWith('#join/')) {
 }
 
 /* ================= Socket ================= */
-socket.on('error:msg', (d) => { toast(trE(d.key)); showScreen('screen-home'); });
+socket.on('error:msg', (d) => {
+  if (['notfound', 'expired', 'full'].includes(d.key)) clearSession();
+  toast(trE(d.key), true);
+  if (!S) showScreen('screen-home');
+});
 socket.on('join:waiting', () => { $('#wait-code').textContent = myPendingCode || ''; showScreen('screen-wait'); });
-socket.on('join:rejected', () => { toast(trE('full')); showScreen('screen-home'); });
+socket.on('join:rejected', () => { toast(trE('full'), true); showScreen('screen-home'); });
 socket.on('joined', (d) => {
   feedItems.length = 0; $('#feed').innerHTML = '';
   clearTimeout(clickWatchdog);
@@ -192,6 +223,7 @@ socket.on('feed:new', (item) => { addFeedItem(item); renderFeed(); });
 
 socket.on('room:state', (st) => {
   S = st;
+  saveSession();
   document.body.dataset.theme = st.theme;
   document.documentElement.lang = st.lang;
   applyI18n();
@@ -205,7 +237,7 @@ socket.on('wheel', (d) => { spinTo(d.targetId, d.duration || 4200); });
 
 socket.on('reaction', (d) => { spawnEmoji(d.emoji); });
 
-socket.on('room:closed', () => { S = null; showScreen('screen-end'); });
+socket.on('room:closed', () => { clearSession(); S = null; showScreen('screen-end'); });
 
 /* ================= i18n application ================= */
 function applyI18n() {
@@ -251,10 +283,13 @@ function renderLobby() {
 }
 
 function renderPending() {
-  // La liste des demandes arrive via l'événement join:pending (stockée dans lastPending)
+  // 1) Panneau du lobby
   const wrap = $('#panel-pending');
   wrap.hidden = !lastPending.length;
   const list = $('#pending-list'); list.innerHTML = '';
+  // 2) Bulles globales visibles sur TOUS les écrans
+  const g = document.getElementById('global-pending');
+  if (g) g.innerHTML = '';
   lastPending.forEach(r => {
     const row = document.createElement('div'); row.className = 'pending-item';
     const nm = document.createElement('span'); nm.textContent = r.name; row.appendChild(nm);
@@ -264,11 +299,28 @@ function renderPending() {
     const no = document.createElement('button'); no.className = 'btn small danger'; no.textContent = '✖️';
     no.onclick = () => socket.emit('join:respond', { id: r.id, ok: false });
     btns.append(ok, no); row.appendChild(btns); list.appendChild(row);
+    if (g) {
+      const chip = document.createElement('div'); chip.className = 'gpending';
+      const txt = document.createElement('span'); txt.textContent = '🔔 ' + r.name + ' veut rejoindre';
+      const b1 = document.createElement('button'); b1.className = 'btn small primary'; b1.textContent = '✔️ Accepter';
+      b1.onclick = () => socket.emit('join:respond', { id: r.id, ok: true });
+      const b2 = document.createElement('button'); b2.className = 'btn small danger'; b2.textContent = '✖️';
+      b2.onclick = () => socket.emit('join:respond', { id: r.id, ok: false });
+      chip.append(txt, b1, b2); g.appendChild(chip);
+    }
   });
 }
 let lastPending = [];
 
-socket.on('join:pending', (d) => { lastPending = d.pending; renderPending(); });
+socket.on('join:pending', (d) => {
+  const isNew = d.pending.length > lastPending.length;
+  lastPending = d.pending;
+  renderPending();
+  if (isNew && d.pending.length) {
+    const last = d.pending[d.pending.length - 1];
+    toast('🔔 ' + last.name + ' demande à entrer dans le salon !', true);
+  }
+});
 
 /* Réglages admin */
 ['set-lang', 'set-theme', 'set-difficulty'].forEach(id => {
@@ -284,7 +336,7 @@ $('#btn-stop-game').addEventListener('click', () => {
   if (confirm(tr('confirmStop'))) socket.emit('game:stop');
 });
 function confirmLeave() {
-  socket.emit('room:leave'); S = null; showScreen('screen-home');
+  socket.emit('room:leave'); clearSession(); S = null; showScreen('screen-home');
 }
 
 /* ================= Invitations ================= */
@@ -308,6 +360,28 @@ $('#btn-invite-copy').addEventListener('click', async () => {
   refreshInvite();
   try { await navigator.clipboard.writeText(S.code); toast(tr('copied') + S.code); } catch (e) { toast(S.code); }
 });
+
+/* Inviter depuis l'écran de jeu aussi */
+const bg = document.getElementById('btn-invite-game');
+if (bg) bg.addEventListener('click', () => {
+  if (!S) return;
+  refreshInvite();
+  window.open('https://wa.me/?text=' + encodeURIComponent(inviteText()), '_blank');
+});
+
+/* ================= Copie rapide : clic sur les puces de code ================= */
+function bindCopyChip(sel) {
+  const el = $(sel); if (!el) return;
+  el.style.cursor = 'pointer';
+  el.title = 'Cliquer pour copier le code';
+  el.addEventListener('click', async () => {
+    if (!S) return;
+    try { await navigator.clipboard.writeText(S.code); toast('📋 Code copié : ' + S.code); }
+    catch (e) { toast('Code : ' + S.code, true); }
+  });
+}
+bindCopyChip('#lobby-code');
+bindCopyChip('#g-code');
 
 /* ================= Jeu ================= */
 function isTarget() { return S && S.turn && S.turn.targetId === socket.id; }
