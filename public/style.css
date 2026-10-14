@@ -164,6 +164,11 @@ body {
 
 #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--hot); color: #fff; font-weight: 700; padding: 12px 20px; border-radius: 14px; z-index: 99; box-shadow: 0 10px 30px rgba(0,0,0,.5); font-size: 14px; max-width: 90vw; text-align: center; }
 
+/* ---- Demandes globales (visibles sur tous les écrans) ---- */
+#global-pending { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; width: min(94vw, 380px); }
+.gpending { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1.5px solid var(--warn); border-radius: 14px; padding: 10px 12px; font-weight: 800; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.45); animation: pop .25s; }
+.gpending span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media (min-width: 700px) {
   .game-wrap { display: grid; grid-template-columns: 1fr 300px; align-items: start; }
   .game-main, #phase-banner, .timer-track { grid-column: 1; }
