@@ -112,9 +112,22 @@ function showScreen(id) {
 
 /* ================= Toast ================= */
 let toastTimer = null;
-function toast(msg) {
+function toast(msg, long) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), long ? 7000 : 3200);
+}
+
+/* --- Feedback visible sur les actions critiques (diagnostic + UX) --- */
+let clickWatchdog = null;
+function armedFeedback(kind) {
+  toast('⏳ Demande envoyée au serveur...', true);
+  clearTimeout(clickWatchdog);
+  clickWatchdog = setTimeout(() => {
+    if (S) return; // un salon est actif = succès
+    toast(socket.connected
+      ? '❌ Le serveur ne répond pas. Attends 10s et réessaie (ou recharge la page).'
+      : '❌ Connexion au serveur perdue — recharge la page (Ctrl+Shift+R).', true);
+  }, 6000);
 }
 
 /* ================= État de connexion (affiché sur l'accueil) ================= */
@@ -169,7 +182,11 @@ if (location.hash.startsWith('#join/')) {
 socket.on('error:msg', (d) => { toast(trE(d.key)); showScreen('screen-home'); });
 socket.on('join:waiting', () => { $('#wait-code').textContent = myPendingCode || ''; showScreen('screen-wait'); });
 socket.on('join:rejected', () => { toast(trE('full')); showScreen('screen-home'); });
-socket.on('joined', () => { feedItems.length = 0; $('#feed').innerHTML = ''; });
+socket.on('joined', (d) => {
+  feedItems.length = 0; $('#feed').innerHTML = '';
+  clearTimeout(clickWatchdog);
+  if (d && d.code) toast('✅ Salon ' + d.code + ' prêt !', true);
+});
 socket.on('feed:init', (d) => { d.feed.forEach(addFeedItem); renderFeed(); });
 socket.on('feed:new', (item) => { addFeedItem(item); renderFeed(); });
 
