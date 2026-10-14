@@ -584,3 +584,4 @@ setInterval(() => { if (S && !wheelAnim && !$('#screen-game').classList.contains
 window.addEventListener('resize', () => drawWheel());
 drawWheel();
 applyI18n();
+
