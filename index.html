@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vérité ou Action 🔥 18+</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body data-theme="neon">
+
+<!-- Écran d'accueil -->
+<section id="screen-home" class="screen active">
+  <div class="home-card">
+    <div class="logo">🌶️</div>
+    <h1 class="title" data-i18n="title">VÉRITÉ ou ACTION</h1>
+    <div class="badge18">18+</div>
+    <p class="tagline" data-i18n="tagline">Le jeu des soirées entre adultes — en ligne, partout au Sénégal 🇸🇳</p>
+
+    <label class="check18">
+      <input type="checkbox" id="age18">
+      <span data-i18n="ageok">J'ai 18 ans ou plus 🍾</span>
+    </label>
+
+    <input type="text" id="in-name" class="input" maxlength="14" data-i18n-ph="yourname" placeholder="Ton pseudo...">
+    <button id="btn-create" class="btn big primary" data-i18n="create">🎓 Créer un salon (je serai l'admin)</button>
+
+    <div class="divider"><span data-i18n="or">— ou —</span></div>
+
+    <input type="text" id="in-code" class="input code" maxlength="4" placeholder="CODE" autocomplete="off">
+    <button id="btn-join" class="btn big" data-i18n="join">🚪 Rejoindre une partie</button>
+
+    <p class="consent" data-i18n="consent">⚠️ Respect et consentement obligatoires. Tout le contenu (messages, audios) disparaît à la fin de la session.</p>
+  </div>
+</section>
+
+<!-- Écran d'attente de validation -->
+<section id="screen-wait" class="screen">
+  <div class="home-card">
+    <div class="logo pulse">⏳</div>
+    <h2 data-i18n="waitingadmin">En attente de l'accord de l'admin...</h2>
+    <p class="tagline" id="wait-code"></p>
+    <button id="btn-wait-cancel" class="btn" data-i18n="cancel">Annuler</button>
+  </div>
+</section>
+
+<!-- Écran salon (lobby) -->
+<section id="screen-lobby" class="screen">
+  <header class="topbar">
+    <span class="chip">🌶️ VoA 18+</span>
+    <span class="chip code-chip" id="lobby-code">----</span>
+    <button id="btn-leave-lobby" class="btn small danger" data-i18n="leave">Quitter</button>
+  </header>
+
+  <div class="lobby-wrap">
+    <div class="panel">
+      <h3 data-i18n="players">👥 Joueurs (<span id="lobby-count">1</span>/6)</h3>
+      <div id="lobby-players" class="players-grid"></div>
+      <p class="hint" data-i18n="need2hint">Il faut au moins 2 joueurs pour lancer la partie.</p>
+    </div>
+
+    <div class="panel" id="panel-admin">
+      <h3 data-i18n="adminpanel">👑 Réglages admin</h3>
+      <div class="settings-row">
+        <label><span data-i18n="lang">Langue</span>
+          <select id="set-lang"><option value="fr">Français</option><option value="en">English</option></select>
+        </label>
+        <label><span data-i18n="theme">Thème</span>
+          <select id="set-theme">
+            <option value="neon">Néon 🔥</option>
+            <option value="nuit">Nuit 🌙</option>
+            <option value="rose">Rose 💦</option>
+          </select>
+        </label>
+        <label><span data-i18n="difficulty">Difficulté</span>
+          <select id="set-difficulty">
+            <option value="1">Facile 😄</option>
+            <option value="2">Moyen 😏</option>
+            <option value="3">Difficile 🔥</option>
+          </select>
+        </label>
+      </div>
+      <button id="btn-start" class="btn big primary" data-i18n="start">▶️ Lancer la partie</button>
+    </div>
+
+    <div class="panel" id="panel-pending" hidden>
+      <h3 data-i18n="requests">🔔 Demandes pour rejoindre</h3>
+      <div id="pending-list"></div>
+    </div>
+
+    <div class="panel">
+      <h3 data-i18n="invitefriends">📩 Inviter des amis</h3>
+      <p class="hint"><span data-i18n="invitetip">Le lien d'invitation expire au bout de 7 minutes ⏱️ — reste :</span> <b id="invite-countdown">7:00</b></p>
+      <div class="invite-row">
+        <button id="btn-invite-wa" class="btn wa" data-i18n="viaWA">💬 WhatsApp</button>
+        <button id="btn-invite-ig" class="btn ig" data-i18n="viaIG">📸 Instagram</button>
+        <button id="btn-invite-copy" class="btn" data-i18n="viaCopy">🔗 Copier le code</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Écran de jeu -->
+<section id="screen-game" class="screen">
+  <header class="topbar">
+    <span class="chip">🌶️ VoA</span>
+    <span class="chip" id="g-diff">🔥</span>
+    <span class="chip code-chip" id="g-code">----</span>
+    <button id="btn-stop-game" class="btn small danger" data-i18n="end">Terminer</button>
+  </header>
+
+  <div class="game-wrap">
+    <div id="phase-banner"><span id="phase-text">…</span></div>
+    <div class="timer-track" id="timer-track" hidden><div class="timer-fill" id="timer-fill"></div></div>
+
+    <div class="game-main">
+      <div class="wheel-zone">
+        <canvas id="wheel" width="560" height="560"></canvas>
+        <div class="wheel-pointer">▼</div>
+      </div>
+
+      <div id="choice-buttons" hidden>
+        <button id="btn-verite" class="btn huge v" data-i18n="truth">💬 VÉRITÉ</button>
+        <button id="btn-action" class="btn huge a" data-i18n="dare">🎯 ACTION</button>
+      </div>
+
+      <div id="question-card" hidden>
+        <div id="q-type"></div>
+        <div id="q-text"></div>
+      </div>
+
+      <div id="answer-zone" hidden>
+        <div class="answer-row">
+          <input type="text" id="in-answer" class="input" maxlength="300" data-i18n-ph="anshere" placeholder="Ta réponse...">
+          <button id="btn-send-answer" class="btn primary">➤</button>
+        </div>
+        <div class="answer-or" data-i18n="orvoice">— ou réponds en vocal —</div>
+        <button id="btn-mic" class="btn mic">🎤 <span data-i18n="record">Maintiens / appuie pour enregistrer</span></button>
+        <div id="rec-info" hidden>🔴 <span id="rec-time">0s</span> <span data-i18n="rectip">(30s max — le vocal s'envoie à l'arrêt)</span></div>
+      </div>
+
+      <div id="reacting-zone" hidden>
+        <p class="hint" data-i18n="reactwait">Réponse donnée ! Réagissez 🔥 — tour suivant imminent...</p>
+        <button id="btn-next" class="btn" data-i18n="nextturn">⏭️ Tour suivant</button>
+      </div>
+    </div>
+
+    <div class="players-strip" id="g-players"></div>
+
+    <div class="chat-zone">
+      <div class="reactions-row" id="reactions"></div>
+      <div id="feed" class="feed"></div>
+      <div class="answer-row">
+        <input type="text" id="in-chat" class="input" maxlength="300" data-i18n-ph="chatph" placeholder="Message libre...">
+        <button id="btn-send-chat" class="btn primary">➤</button>
+      </div>
+    </div>
+  </div>
+  <div id="float-emojis"></div>
+</section>
+
+<!-- Écran fin de session -->
+<section id="screen-end" class="screen">
+  <div class="home-card">
+    <div class="logo">🧹</div>
+    <h2 data-i18n="closed">Session fermée</h2>
+    <p class="tagline" data-i18n="closedmsg">Tous les messages, audios et données ont été définitivement supprimés. Rien n'a été stocké.</p>
+    <button id="btn-back-home" class="btn big primary" data-i18n="home">🏠 Retour à l'accueil</button>
+  </div>
+</section>
+
+<div id="toast" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
