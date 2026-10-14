@@ -37,6 +37,8 @@ const T = {
     confirmStop: 'Terminer la session ? TOUT sera supprimé (messages + audios).',
     micdenied: 'Micro inaccessible 😬 Vérifie les permissions.', shortrec: 'Trop court ! Enregistre au moins 1 seconde.',
     need18: 'Confirme que tu as 18 ans ou plus 🍾',
+    needname: "Choisis d'abord ton pseudo 😄",
+    needcode: 'Tape le code du salon (4 lettres) 🔤',
     pauseme: '⏸️ Pause', resume: '▶️ Reprendre', pausetip: 'En pause : tu n\u2019es plus désigné par la roue.',
   },
   en: {
@@ -66,6 +68,8 @@ const T = {
     confirmStop: 'End the session? EVERYTHING will be deleted (messages + audios).',
     micdenied: 'Microphone unavailable 😬 Check permissions.', shortrec: 'Too short! Record at least 1 second.',
     need18: 'Please confirm you are 18 or older 🍾',
+    needname: 'Pick a nickname first 😄',
+    needcode: 'Type the room code (4 letters) 🔤',
     pauseme: '⏸️ Pause', resume: '▶️ Resume', pausetip: 'On pause: the wheel will not pick you.',
   },
 };
@@ -113,8 +117,27 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3200);
 }
 
+/* ================= État de connexion (affiché sur l'accueil) ================= */
+function setConn(state) {
+  const card = document.querySelector('.home-card');
+  if (!card) return;
+  let d = document.getElementById('conn-badge');
+  if (!d) {
+    d = document.createElement('div');
+    d.id = 'conn-badge';
+    d.style.cssText = 'font-size:13px;font-weight:700;';
+    card.prepend(d);
+  }
+  if (state === 'ok') { d.textContent = '🟢 Connecté au serveur'; d.style.color = 'var(--ok)'; }
+  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — rafraîchis la page'; d.style.color = 'var(--hot)'; }
+  else { d.textContent = '🟡 Connexion au serveur...'; d.style.color = 'var(--warn)'; }
+}
+socket.on('connect', () => setConn('ok'));
+socket.on('connect_error', () => setConn('err'));
+socket.io.on('reconnect', () => setConn('ok'));
+setConn(socket.connected ? 'ok' : 'connecting');
+
 /* ================= Accueil ================= */
-$('#age18').addEventListener('change', () => {});
 function check18() {
   if (!$('#age18').checked) { toast(tr('need18')); return false; }
   return true;
@@ -122,15 +145,15 @@ function check18() {
 $('#btn-create').addEventListener('click', () => {
   if (!check18()) return;
   const name = $('#in-name').value.trim();
-  if (!name) { $('#in-name').focus(); return; }
+  if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
   socket.emit('room:create', { name, lang: 'fr', theme: 'neon', difficulty: 2 });
 });
 $('#btn-join').addEventListener('click', () => {
   if (!check18()) return;
   const name = $('#in-name').value.trim();
   const code = $('#in-code').value.trim().toUpperCase();
-  if (!name) { $('#in-name').focus(); return; }
-  if (code.length < 4) { $('#in-code').focus(); return; }
+  if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
+  if (code.length < 4) { $('#in-code').focus(); toast(tr('needcode')); return; }
   myPendingCode = code;
   socket.emit('room:join', { name, code });
 });
@@ -143,7 +166,6 @@ if (location.hash.startsWith('#join/')) {
 }
 
 /* ================= Socket ================= */
-socket.on('connect', () => {});
 socket.on('error:msg', (d) => { toast(trE(d.key)); showScreen('screen-home'); });
 socket.on('join:waiting', () => { $('#wait-code').textContent = myPendingCode || ''; showScreen('screen-wait'); });
 socket.on('join:rejected', () => { toast(trE('full')); showScreen('screen-home'); });
