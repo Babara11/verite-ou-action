@@ -157,9 +157,9 @@ function setConn(state) {
     d.style.cssText = 'font-size:13px;font-weight:700;';
     card.prepend(d);
   }
-  if (state === 'ok') { d.textContent = '🟢 Connecté · v5'; d.style.color = 'var(--ok)'; }
-  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v5'; d.style.color = 'var(--hot)'; }
-  else { d.textContent = '🟡 Connexion... · v5'; d.style.color = 'var(--warn)'; }
+  if (state === 'ok') { d.textContent = '🟢 Connecté · v7'; d.style.color = 'var(--ok)'; }
+  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v7'; d.style.color = 'var(--hot)'; }
+  else { d.textContent = '🟡 Connexion... · v7'; d.style.color = 'var(--warn)'; }
 }
 socket.on('connect', () => {
   setConn('ok');
@@ -298,8 +298,23 @@ function renderLobby() {
   const m = me();
   $('#lobby-code').textContent = S.code;
   $('#lobby-count').textContent = S.players.length;
-  $('#panel-admin').hidden = !(m && m.isAdmin);
-  $('#btn-start').disabled = S.players.length < 2;
+  // Panneau TOUJOURS visible : tout le monde voit le bouton et sait qui commande
+  $('#panel-admin').hidden = false;
+  $('#admin-settings').hidden = !(m && m.isAdmin);
+  $('#btn-addbot').hidden = !(m && m.isAdmin);
+  const adminP = S.players.find(p => p.isAdmin);
+  const wa = $('#who-admin');
+  if (m && m.isAdmin) {
+    wa.textContent = '\u{1F451} Tu es l\u2019admin : c\u2019est TOI qui lance la partie';
+    wa.style.color = 'var(--ok)';
+  } else {
+    wa.textContent = '\u2139\uFE0F L\u2019admin est ' + (adminP ? adminP.name : '?') + ' \u2014 seul lui peut lancer';
+    wa.style.color = 'var(--warn)';
+  }
+  $('#btn-start').textContent = (m && m.isAdmin)
+    ? tr('start')
+    : (S.lang === 'en' ? '\u{1F451} The admin starts the game' : '\u{1F451} L\u2019admin lance la partie');
+  $('#btn-start').disabled = S.players.length < 2 || !(m && m.isAdmin);
 
   const grid = $('#lobby-players'); grid.innerHTML = '';
   for (let i = 0; i < S.maxPlayers; i++) {
@@ -480,6 +495,10 @@ function renderPlayersStrip() {
     const num = document.createElement('div'); num.className = 'slotnum'; num.textContent = 'C' + (i + 1);
     card.appendChild(num);
     if (p) {
+      const dot = document.createElement('span');
+      dot.className = 'dot' + ((p.connected || p.isBot) ? ' on' : '');
+      dot.title = (p.connected || p.isBot) ? 'Connecté' : 'Déconnecté';
+      card.appendChild(dot);
       const top = document.createElement('div'); top.className = 'grow';
       if (p.isAdmin) { const c = document.createElement('span'); c.textContent = '\u{1F451}'; top.appendChild(c); }
       const nm = document.createElement('span'); nm.className = 'nm';
