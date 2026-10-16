@@ -463,6 +463,13 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 @keyframes rise { to { transform: translateY(-105vh) rotate(25deg); opacity: .1; } }
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--hot); color: #fff; font-weight: 700; padding: 12px 18px; border-radius: 14px; z-index: 99; font-size: 14px; max-width: 92vw; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 [hidden] { display: none !important; }
+.feedhead { display: flex; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--line); }
+.badge-unread { background: var(--hot); color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 11px; font-weight: 800; }
+#inapp { position: fixed; inset: 0; background: rgba(0,0,0,.94); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#inapp[hidden] { display: none !important; }
+.inapp-card { max-width: 400px; background: var(--card); border: 1.5px solid var(--hot); border-radius: 20px; padding: 22px; text-align: center; }
+.media-img, .media-vid { max-width: 100%; border-radius: 12px; margin-top: 4px; }
+.msg.mine { align-self: flex-end; background: color-mix(in srgb, var(--hot) 16%, var(--card)); }
 .diffrow .btn { padding: 11px 4px; font-size: 13.5px; }
 </style>
 </head>
@@ -473,7 +480,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 9 · GENRE + MODE CHAUD + IA</div>
+    <div class="ver">VERSION 10 · MÉDIAS + ALERTES + FILE PLIABLE</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -555,12 +562,28 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
       <p class="hint" style="text-align:center;margin:4px 0">— ou réponds en vocal —</p>
       <button id="mic" class="btn">🎤 Appuie pour enregistrer (30s max)</button>
     </div>
-    <div class="panel">
-      <div class="rea" id="rea"></div>
-      <div class="feed" id="feed" style="margin-top:8px"></div>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="in-chat" class="input" maxlength="300" placeholder="Message libre...">
-        <button id="btn-chat" class="btn primary">➤</button>
+    <div class="panel" style="padding:0">
+      <div class="feedhead">
+        <button id="feedtoggle" class="btn small">💬 Messages <span id="unread" class="badge-unread" hidden></span> <span id="feedarrow">▼</span></button>
+        <button id="btn-media" class="btn small">📎 Partager</button>
+      </div>
+      <div id="feedbody" style="padding:10px">
+        <div class="rea" id="rea"></div>
+        <div id="mediaform" hidden style="border:1px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px">
+          <p class="hint" style="margin-bottom:6px">📷 Photo (comprimée auto) ou 🎬 vidéo courte (max ~2 Mo)</p>
+          <input type="file" id="mediafile" accept="image/*,video/*" style="max-width:100%;font-size:12px">
+          <p class="hint" style="margin:6px 0 2px">Envoyer à :</p>
+          <div id="media-to" class="hint" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div class="row" style="margin-top:8px">
+            <button id="btn-media-send" class="btn primary" style="flex:1">📤 Envoyer</button>
+            <button id="btn-media-cancel" class="btn small">Annuler</button>
+          </div>
+        </div>
+        <div class="feed" id="feed" style="margin-top:8px"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="in-chat" class="input" maxlength="300" placeholder="Message libre...">
+          <button id="btn-chat" class="btn primary">➤</button>
+        </div>
       </div>
     </div>
   </div>
@@ -576,6 +599,16 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
   </div>
 </section>
 
+<div id="inapp" hidden>
+  <div class="inapp-card">
+    <div style="font-size:44px">⚠️</div>
+    <h2 style="margin:6px 0">Ouvre le jeu dans ton NAVIGATEUR</h2>
+    <p class="hint">Tu es dans le navigateur intégré d'une application (Instagram, etc.). Si tu fermes l'application, <b>le jeu se ferme aussi</b> et tu perds ta place !</p>
+    <p class="hint" style="margin:8px 0"><b>1.</b> Appuie sur <b>📋 Copier le lien</b><br><b>2.</b> Ouvre <b>Chrome</b> (Android) ou <b>Safari</b> (iPhone)<br><b>3.</b> Colle le lien et joue tranquille ✅</p>
+    <button id="btn-copylink" class="btn big primary">📋 Copier le lien du jeu</button><br>
+    <button id="btn-inapp-continue" class="btn small" style="margin-top:10px;background:transparent;border:none;color:var(--mut);text-decoration:underline">Continuer quand même (déconseillé)</button>
+  </div>
+</div>
 <div id="toast" hidden></div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -590,6 +623,21 @@ function toast(m, long) { var t = $('#toast'); t.textContent = m; t.hidden = fal
 function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+/* ---------- Navigateur intégré (Instagram...) : alerte + copie du lien ---------- */
+(function () {
+  var UA = navigator.userAgent || '';
+  var INAPP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\/|LinkedIn|Pinterest|WebView/i.test(UA) || (/iPhone|iPad|iPod/.test(UA) && !/Safari\//.test(UA));
+  if (!INAPP) return;
+  var ov = document.getElementById('inapp');
+  if (!ov) return;
+  ov.hidden = false;
+  document.getElementById('btn-copylink').onclick = function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(function () { toast('📋 Lien copié ! Colle-le dans Chrome ou Safari', true); }, function () { toast(location.href, true); });
+    else toast(location.href, true);
+  };
+  document.getElementById('btn-inapp-continue').onclick = function () { ov.hidden = true; };
+})();
 
 /* ---------- Connexion + reprise auto ---------- */
 socket.on('connect', function () {
@@ -620,6 +668,9 @@ socket.on('room:state', function (st) {
 });
 socket.on('wheel', function (d) { spin(d.targetId, d.duration || 4000); });
 socket.on('reaction', function (d) { float(d.emoji); });
+socket.on('player:offline', function (d) { toast('📴 ' + d.name + ' s\u2019est déconnecté !', true); });
+socket.on('player:back', function (d) { toast('🔄 ' + d.name + ' est revenu !'); });
+socket.on('media:new', function (it) { addMsg(it); drawFeed(); if (it.mid !== socket.id) toast('📷 ' + it.name + ' t\u2019a envoyé du contenu privé'); });
 socket.on('room:closed', function () { del('voa_code'); S = null; show('s-end'); });
 
 /* ---------- Accueil : genre ---------- */
@@ -854,7 +905,68 @@ function float(e) {
 
 /* ---------- Feed ---------- */
 var items = [];
-function addMsg(it) { items.push(it); if (items.length > 60) items.shift(); }
+var feedOpen = true, unread = 0;
+function updateUnread() { var b = $('#unread'); if (!b) return; b.hidden = feedOpen || unread === 0; b.textContent = unread + ' nouveaux'; }
+function addMsg(it) { items.push(it); if (items.length > 60) items.shift(); if (!feedOpen && it.kind !== 'sys') { unread++; updateUnread(); } }
+$('#feedtoggle').onclick = function () {
+  feedOpen = !feedOpen;
+  $('#feedbody').hidden = !feedOpen;
+  $('#feedarrow').textContent = feedOpen ? '\u25BC' : '\u25B6';
+  if (feedOpen) { unread = 0; updateUnread(); }
+};
+$('#btn-media').onclick = function () {
+  if (!S) return;
+  var box = $('#media-to'); box.innerHTML = '';
+  S.players.forEach(function (p) {
+    if (p.isBot || p.id === socket.id) return;
+    var lab = document.createElement('label');
+    lab.style.cssText = 'border:1px solid var(--line);border-radius:99px;padding:4px 10px;cursor:pointer;font-weight:700';
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = p.id; cb.checked = true;
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(' ' + p.name));
+    box.appendChild(lab);
+  });
+  if (!box.children.length) box.textContent = 'Aucun autre joueur — invite quelqu\u2019un !';
+  $('#mediafile').value = '';
+  $('#mediaform').hidden = false;
+};
+$('#btn-media-cancel').onclick = function () { $('#mediaform').hidden = true; };
+$('#btn-media-send').onclick = function () {
+  var f = $('#mediafile').files[0];
+  if (!f) return toast('Choisis d\u2019abord une photo ou vidéo');
+  var to = [];
+  document.querySelectorAll('#media-to input[type=checkbox]').forEach(function (cb) { if (cb.checked) to.push(cb.value); });
+  if (!to.length) return toast('Choisis au moins un joueur');
+  if (f.type.indexOf('image/') === 0) {
+    var r = new FileReader();
+    r.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var cv = document.createElement('canvas'), mx = 1000;
+        var sc = Math.min(1, mx / Math.max(img.width, img.height));
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        var q = 0.8, b64 = cv.toDataURL('image/jpeg', q);
+        while (b64.length > 2600000 && q > 0.3) { q -= 0.15; b64 = cv.toDataURL('image/jpeg', q); }
+        if (b64.length > 3200000) return toast('Photo trop lourde, réessaie');
+        socket.emit('media:send', { b64: b64, kind: 'photo', to: to });
+        $('#mediaform').hidden = true;
+        toast('📤 Envoyé !');
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(f);
+  } else if (f.type.indexOf('video/') === 0) {
+    if (f.size > 2200000) return toast('Vidéo trop lourde ! Max ~2 Mo (clip très court)');
+    var r2 = new FileReader();
+    r2.onload = function () {
+      socket.emit('media:send', { b64: r2.result, kind: 'video', to: to });
+      $('#mediaform').hidden = true;
+      toast('📤 Envoyé !');
+    };
+    r2.readAsDataURL(f);
+  } else toast('Format non supporté');
+};
 function drawFeed() {
   var f = $('#feed'); if (!f) return;
   f.innerHTML = '';
@@ -868,6 +980,13 @@ function drawFeed() {
       a.innerHTML = '<span class="p">▶</span><span>' + Math.round((it.ms || 0) / 1000) + 's — appuie pour écouter</span>';
       a.onclick = (function (b64) { return function () { try { new Audio(b64).play(); } catch (e) {} }; })(it.b64);
       el.appendChild(w); el.appendChild(a);
+    } else if (it.kind === 'photo' || it.kind === 'video') {
+      el.className = 'msg' + (it.mid === socket.id ? ' mine' : '');
+      var w3 = document.createElement('div'); w3.className = 'who';
+      w3.textContent = '\uD83D\uDD10 ' + (it.mid === socket.id ? 'Toi' : it.name) + (it.kind === 'photo' ? ' · \uD83D\uDCF7' : ' · \uD83C\uDFAC');
+      el.appendChild(w3);
+      if (it.kind === 'photo') { var im = document.createElement('img'); im.src = it.b64; im.className = 'media-img'; el.appendChild(im); }
+      else { var v = document.createElement('video'); v.src = it.b64; v.className = 'media-vid'; v.controls = true; el.appendChild(v); }
     } else {
       el.className = 'msg' + (it.kind === 'answer' ? ' answer' : '');
       var w2 = document.createElement('div'); w2.className = 'who'; w2.textContent = (it.kind === 'answer' ? '💬 ' : '') + it.name;
@@ -924,7 +1043,7 @@ app.get('/', (req, res) => {
   res.send(HTML);
 });
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 2e6 });
+const io = new Server(server, { maxHttpBufferSize: 4e6 });
 
 io.on('connection', (socket) => {
   socket.on('room:create', (data = {}) => {
@@ -952,6 +1071,7 @@ io.on('connection', (socket) => {
       socket.emit('joined', { code: room.code });
       io.to(socket.id).emit('feed:init', { feed: room.feed.slice(-40) });
       sys(room, name + ' est de retour 🔄');
+      io.to(room.code).emit('player:back', { name });
       return broadcast(room);
     }
     if (room.players.size >= MAX_PLAYERS) return socket.emit('error:msg', { key: 'full' });
@@ -1037,6 +1157,18 @@ io.on('connection', (socket) => {
     else pushFeed(room, { kind: 'audio', mid: p.id, name: p.name, b64, ms: dur });
   });
 
+  socket.on('media:send', ({ b64, kind, to } = {}) => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const p = room.players.get(socket.id); if (!p) return;
+    if (typeof b64 !== 'string' || b64.length > 3300000) return;
+    if (kind === 'photo' && !b64.startsWith('data:image')) return;
+    if (kind === 'video' && !b64.startsWith('data:video')) return;
+    if (!['photo', 'video'].includes(kind)) return;
+    const item = { kind, mid: p.id, name: p.name, b64, ts: Date.now() };
+    io.to(socket.id).emit('media:new', item);
+    if (Array.isArray(to)) to.forEach(id => { if (room.players.has(id) && id !== socket.id) io.to(id).emit('media:new', item); });
+  });
+
   socket.on('reaction', ({ emoji } = {}) => {
     const room = socketRoom.get(socket.id); if (!room) return;
     const p = room.players.get(socket.id); if (!p) return;
@@ -1071,6 +1203,10 @@ io.on('connection', (socket) => {
     }
     const p = room.players.get(socket.id); if (!p) return;
     p.connected = false;
+    if (room.players.size > 1) {
+      sys(room, '\uD83D\uDCF4 ' + p.name + ' s\u2019est déconnecté');
+      io.to(room.code).emit('player:offline', { name: p.name });
+    }
     const isTarget = room.turn && room.turn.targetId === socket.id;
     if (isTarget && ['choosing', 'answering'].includes(room.phase)) { nextTurn(room); return; }
     broadcast(room);
@@ -1090,5 +1226,5 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v9 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v10 — démarré sur le port', process.env.PORT || 3000);
 });
