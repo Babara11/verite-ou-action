@@ -171,9 +171,9 @@ body {
 
 @media (min-width: 700px) {
   .game-wrap { display: grid; grid-template-columns: 1fr 300px; align-items: start; }
+  #g-players { grid-column: 1 / -1; grid-row: 1; grid-template-columns: repeat(6, 1fr); }
   .game-main, #phase-banner, .timer-track { grid-column: 1; }
-  .players-strip { grid-column: 1; }
-  .chat-zone { grid-column: 2; grid-row: 1 / 5; position: sticky; top: 70px; }
+  .chat-zone { grid-column: 2; grid-row: 2 / 6; position: sticky; top: 70px; }
   .feed { max-height: 55vh; }
 }
 
@@ -195,3 +195,9 @@ body {
 .gcard.empty { border-style: dashed; opacity: .45; }
 .mini.addbot { border: 1.5px dashed var(--mut); color: var(--mut); font-weight: 800; padding: 6px 10px; border-radius: 10px; cursor: pointer; background: transparent; }
 .pausebtn { grid-column: 1 / -1; }
+#who-admin { font-weight: 800; text-align: center; padding: 4px 0 10px; font-size: 14px; line-height: 1.4; }
+
+/* Pastille de connexion sur les cases */
+.gcard .dot { position: absolute; top: 6px; left: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--hot); }
+.gcard .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.gcard.on { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
