@@ -681,6 +681,99 @@ function removePlayer(room, id, kicked) {
     "Décris la scène parfaite qui finirait au lit avec quelqu'un d'ici. Tu es le réalisateur : casting immédiat."
   ]);
 
+  /* --- v23 · LANGAGE DIRECT : anatomie sans filtre (demande expresse du groupe) --- */
+  QUESTIONS[4].verite.push(...[
+    "Tes fesses : rondes, plates, fermes ? Décris-les comme un expert.",
+    "Ta bite : longue, grosse, courbée ? Mesure approximative acceptée.",
+    "Tes seins : taille réelle, forme, pointe ? Tout, maintenant.",
+    "Ta chatte : épilée, touffue, déco ? Le groupe veut le style exact.",
+    "Le cul le plus beau que tu aies vu en vrai ? Raconte la scène.",
+    "Une paire de seins ou un beau cul : tu regardes le premier en soirée ?",
+    "Combien de bites différentes tu as vues de près ? Le chiffre exact.",
+    "Combien de chattes tu as vues de près ? Idem, honnêteté.",
+    "Ta fesse a déjà été mordue pendant un plan ? Raconte.",
+    "Tu aimes qu on te tire les cheveux ou qu on te mordille les fesses ? Assume.",
+    "Ta position où on voit le mieux tes fesses bouger ? Détaille le mouvement.",
+    "Seins nus ou porte-jarretelles : qu est-ce qui te fait le plus craquer ?",
+    "La plus grosse bite que tu aies vue : taille, circonstance, ta réaction.",
+    "Les testicules : tu les traites comment pendant un plan ? Le groupe écoute.",
+    "Ta vulve préférée : celle d une ex ? Décris sans le nom.",
+    "Ta poitrine bouge quand tu marches sans soutif ? Démontre debout.",
+    "Le surnom que tu donnes à ta bite ou ta chatte en privé ? Dis-le ici.",
+    "Combien de temps tu peux sucer sans t arrêter ? Ton record.",
+    "Tu avales ou tu craches ? Depuis quand tu as changé d avis ?",
+    "Le droit de toucher tes seins, ça se gagne comment ? Conditions exactes.",
+    "Ta dernière fois : dans quelle position ta bite/chatte a travaillé le plus ?",
+    "Ta fesse gauche ou droite a le plus survécu aux morsures ? Blason.",
+    "Qu est-ce qui rend une chatte irrésistible selon toi ? Critères techniques.",
+    "Combien de doigts tu peux prendre ? Personne ne force, mais on demande.",
+    "Ton cul a déjà été impliqué dans un plan ? Sois franc sur tes limites.",
+    "Seins à l air en plage privé : tu l as déjà fait ? Où, quand, qui voyait ?",
+    "Le pénis parfait : circonférence, longueur, aspect. Le groupe note ta précision.",
+    "Tu regardes la bite ou les yeux quand tu suces ? Technique préférée.",
+    "Ta chatte a déjà été léchée dans un lieu public ? Le lieu exact.",
+    "Tu préfères qu on te doigte ou qu on te lèche ? Et pourquoi ?",
+    "Le nombre de fois où tu as joui ce mois-ci ? Total officiel.",
+    "Ta poitrine a déjà sorti par une fenêtre de voiture ? Vitesse approximative 😈",
+    "Un plan où ta bite a refusé de coopérer ? Raconte la panne.",
+    "Un plan où ta chatte a dit non alors que toi tu disais oui ? Gênant, raconte.",
+    "Ta fesse a déjà reçu une claque sonore en public ? Qui l a entendu ?",
+    "Seins, cul, bouche : ordre d attaque préféré sur toi ? Justifie.",
+    "Combien de centimètres tu juge parfaits ? Sois précis au demi-centimètre.",
+    "Ta bite est circoncise ? Question du groupe, réponse du groupe.",
+    "Ta chatte fait des bruits particuliers pendant l action ? Imite à voix basse.",
+    "La position où tes seins se balancent le plus ? Le groupe veut la physique.",
+    "Tu as déjà joui juste en te frottant les cuisses ? Sans mains ?",
+    "Ton record de câlin en une nuit sans ta bite au repos ? Ton record.",
+    "Lécher, sucer, mordiller : ton menu préféré sur un corps ? Entrée, plat, dessert.",
+    "Tu as déjà mesuré ta langue sur un pénis ? Le record de profondeur.",
+    "Les poils pubiens : jungle, garden, désert ? Ta philosophie intime.",
+    "Ta chatte/bite a un prénom ? Qui l a baptisé ?",
+    "Le parfum que ta bite/chatte garde après l amour ? Décris-le honnêtement.",
+    "Combien de secondes tu tiens une gorge profonde ? Ton record vérifié.",
+    "Ta fesse la plus photogénie : gauche ou droite ? Le groupe tranchera.",
+    "Tu as déjà comparé deux bites côte à côte ? Verdict et écart.",
+    "Le plus long cunnilingus que tu aies donné ou reçu ? Durée officielle.",
+    "Ta poitrine a gonflé avant tes règles ? Les détails qui changent tout.",
+    "Un plan où on t a mordu la fesse jusqu à la trace ? La marque a tenu combien de jours ?",
+    "Ta bite/chatte a déjà déclenché un incident au lit ? Cassure, glissade, chute ?",
+    "Combien de slips/culottes déchirés pendant l action ? Les preuves existent encore ?",
+    "Seins en public : dernière fois, lieu, réaction des témoins ?",
+    "Ta technique pour garder une bite au garde-à-vous longtemps ? Les astuces du métier."
+  ]);
+  QUESTIONS[4].action.push(...[
+    "Montre tes fesses à la cam 3 secondes, visage caché si tu veux. Maintenant.",
+    "Montre un sein (ou ton torse) à la cam 3 secondes. Le groupe applaudit.",
+    "Mains dans le dos : décris ta bite/chatte à voix haute comme un commentaire sportif.",
+    "Enlève ton haut maintenant. Tu restes comme ça jusqu au prochain tour.",
+    "Enlève ton bas maintenant. Sous-vêtements autorisés... pour l instant.",
+    "Montre ta main sur ta fesse puis remonte lentement jusqu à la taille. 10 secondes.",
+    "Fais rebondir tes seins (ou mime le mouvement) face cam. 5 fois.",
+    "Envoie une photo de ton cul au joueur de ton choix. Privé 📎, immédiat.",
+    "Envoie une photo de ta poitrine au joueur que le groupe désigne. Privé 📎.",
+    "Prends ta bite/chatte en photo (sans visage) et envoie-la au joueur de ton choix. Privé 📎.",
+    "Lèche ton pouce puis ton index lentement en regardant la cam. 10 secondes.",
+    "Mime une pipe avec ton pouce pendant 10 secondes. Crédibilité notée sur 10.",
+    "Mime un cunnilingus avec ta main et ta langue. Le groupe note la précision.",
+    "Fais un tour de cam : montre ta taille puis tes fesses en te retournant. 15 secondes.",
+    "Saute sur place face cam et filme comment ça bouge. 10 secondes.",
+    "Caresse ta cuisse intérieure jusqu à frôler la zone interdite. Sans dépasser. 15 secondes.",
+    "Écris ici la taille de ta bite ou bonnet de ta poitrine. Publiquement. Sans mentir.",
+    "Montre la dernière photo de ta galerie. Sans trier. Le groupe juge.",
+    "Envoie un vocal où tu gémis fort pendant 5 secondes. Volume maximum.",
+    "Simule une position debout contre le mur. 15 secondes de show.",
+    "Assis(e), jambes écartées face cam : décris ce que le groupe voit. Avec humour et crûment.",
+    "Envoie un selfie de ta bouche grande ouverte, langue sortie. Le groupe note.",
+    "Mains sur tes seins (ou torse) : masse-toi devant la cam pendant 15 secondes.",
+    "Enlève deux vêtements maintenant. Le groupe choisit lesquels. Pas de négoce.",
+    "Film tes fesses en train de danser : 15 secondes, la cam ne ment pas.",
+    "Imite le bruit que fait ta chatte/bite pendant l action. Les voisins comprennent.",
+    "Envoie un vocal où tu dis le prénom du joueur de ton choix entre deux gémis.",
+    "Mime la fellation parfaite avec le dos de ta main : technique complète expliquée.",
+    "Déshabille-toi entièrement (sous-vêtements restent) en 20 secondes chrono, cam ouverte.",
+    "Garde tes mains sur tes fesses jusqu à la fin du tour. Démonstration incluse."
+  ]);
+
   let tot = 0;
   Object.keys(QUESTIONS).forEach(d => { tot += QUESTIONS[d].verite.length + QUESTIONS[d].action.length; });
   console.log('📚 Banque de questions :', tot, '— 🌶️ niv.4 :', QUESTIONS[4].verite.length + QUESTIONS[4].action.length);
@@ -823,7 +916,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 22 · INFERNO</div>
+    <div class="ver">VERSION 23 · SANS DÉTOUR</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1454,7 +1547,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v22</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v23</div>
 </body>
 </html>`;
 
@@ -1660,6 +1753,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v22 — démarré sur le port', process.env.PORT || 3000);
-  console.log('🚫 IA désactivée (v22) — questions 100% banque locale XXL');
+  console.log('🌶️ Vérité ou Action v23 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🚫 IA désactivée (v23) — questions 100% banque locale XXL');
 });
