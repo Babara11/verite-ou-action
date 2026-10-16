@@ -300,11 +300,17 @@ function aiWarn(room, msg) {
 async function aiQuestion(room, diff, type, name, gender) {
   LAST_AI_ROOM = room;
   if (!process.env.GROQ_API_KEY) return null;
-  const niveau = { 1: 'légère et fun', 2: 'coquine', 3: 'très directe, sans filtre', 4: 'TRÈS CHAUD : explicite, intime, sans AUCUN filtre (adultes consentants)' }[diff] || 'coquine';
-  const prompt = 'Tu es le meneur d\u2019un jeu de Vérité ou Action pour adultes consentants (18+). Génère UNE seule '
-    + (type === 'verite' ? 'question de VÉRITÉ (intime, à répondre honnêtement)' : 'ACTION (défi osé à accomplir immédiatement devant le groupe)')
-    + ' pour le joueur "' + name + '" (' + (gender === 'femme' ? 'une femme' : 'un homme') + '). Niveau demandé : ' + niveau
-    + '. En français. Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
+  const niveau = { 1: 'légère et fun, tout public adulte', 2: 'coquine', 3: 'très directe, sans filtre', 4: 'BRÛLANTE : explicite, intime, sans AUCUN filtre (adultes consentants qui veulent monter le feu)' }[diff] || 'coquine';
+  const ANGLES = ['un fantasme jamais avoué', 'une première fois', 'un lieu risqué', 'un souvenir très chaud', 'le plan parfait imaginaire', 'les préliminaires', 'une position précise', 'un secret de chambre à coucher', 'une soirée qui a dérapé', 'un désir pour quelqu un ici', 'un message très osé', 'un vêtement précis', 'le moment où tu as perdu le contrôle', 'une sensation adorée', 'un endroit du corps trop négligé', 'une envie interdite du moment', 'une confession gênante mais excitante', 'ce qui te fait fondre instantanément', 'un jeu interdit entre adultes', 'une nuit que tu refais mentalement'];
+  const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
+  const eviter = ((room && room.lastQs) || []).filter(Boolean).slice(-3);
+  const prompt = 'Tu es le meneur TRÈS CHAUD d un Vérité ou Action entre adultes consentants (18+). '
+    + 'Génère UNE seule ' + (type === 'verite' ? 'question de VÉRITÉ très intime' : 'ACTION très osée à faire MAINTENANT')
+    + ' pour le joueur "' + name + '" (' + (gender === 'femme' ? 'une femme' : 'un homme') + '). Niveau : ' + niveau + '. '
+    + 'Thème imposé : ' + angle + '. '
+    + 'RÈGLES ABSOLUES : français SIMPLE de tous les jours, UNE seule phrase COURTE (15 à 25 mots maximum), directe, brûlante, va droit au but, ose tout — le contexte est 18+. '
+    + (eviter.length ? 'Ne ressemble à AUCUNE de ces questions déjà posées : "' + eviter.join('" / "') + '". ' : '')
+    + 'Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
   const tentes = [];
   for (let essai = 0; essai < 3; essai++) {
     try {
@@ -314,7 +320,7 @@ async function aiQuestion(room, diff, type, name, gender) {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
-        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 600, response_format: { type: 'json_object' } }),
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], temperature: 1.15, max_tokens: 600, response_format: { type: 'json_object' } }),
         signal: AbortSignal.timeout(9000),
       });
       if (r.status === 404) {
@@ -355,10 +361,12 @@ function beginAnswering(room, type) {
   const q = drawQuestion(room, type);
   room.phase = 'answering';
   room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false, ai: false };
+  room.lastQs = ((room.lastQs || []).concat(q)).slice(-4);
   // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
   aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
     if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
       room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false; room.aiErr = null;
+      room.lastQs = ((room.lastQs || []).concat(aiq)).slice(-4);
       broadcast(room);
     }
   });
@@ -420,6 +428,99 @@ function removePlayer(room, id, kicked) {
   if (wasTarget && midTurn) { nextTurn(room); return; }
   broadcast(room);
 }
+
+/* ===== v17 · BANQUE XXL : générateur → plus de 2000 questions ===== */
+(function () {
+  function fill(list) {
+    const out = [];
+    list.forEach(function (item) {
+      const tpl = item[0], xs = item[1], ys = item[2];
+      if (!ys) xs.forEach(x => out.push(tpl.replace('{x}', x)));
+      else xs.forEach(x => ys.forEach(y => { if (x !== y) out.push(tpl.replace('{x}', x).replace('{y}', y)); }));
+    });
+    return out;
+  }
+  /* --- Niveau 4 🌶️ CHAUD : vérités --- */
+  const D4 = [
+    "couché avec quelqu'un rencontré le même soir", "envoyé un nude à la mauvaise personne", "reçu un nude et fait semblant de rien",
+    "fait l'amour dans une voiture", "fait l'amour sous la douche", "couché avec un(e) collègue", "embrassé deux personnes le même soir",
+    "menti sur ton nombre de coups", "fait un plan à trois", "fantasmé sur l'ex d'un(e) ami(e)", "couché avec l'ex d'un(e) ami(e)",
+    "fait l'amour au téléphone", "regretté un coup dès le lendemain", "couché chez tes parents en cachette", "fait l'amour dans les toilettes d'un bar",
+    "filmé un de tes plans", "fait un striptease devant quelqu'un", "couché avec quelqu'un de marié", "été surpris(e) en pleine action",
+    "surpris deux personnes en pleine action", "couché avec ton/ta voisin(e)", "envoyé un message très osé au mauvais chat", "couché le premier soir",
+    "fait durer les préliminaires plus d'une heure", "simulé un orgasme", "découvert que l'autre simulait", "couché avec deux personnes en 24 h",
+    "dit je t'aime juste pour coucher", "testé les menottes", "testé la chantilly au lit", "fait l'amour devant un miroir", "couché sur la plage",
+    "gardé les sous-vêtements de quelqu'un", "volé un baiser pendant que l'autre conduisait", "fait l'amour en pleine nature", "reçu un massage qui a mal tourné (dans le bon sens)",
+    "couché avec quelqu'un de 10 ans plus âgé", "couché avec quelqu'un de 10 ans plus jeune", "revu un(e) ex juste pour un plan", "eu un plan encore secret aujourd'hui",
+    "fantasmé sur un(e) prof", "murmuré un truc très osé à quelqu'un d'ici", "envoyé un vocal coquin à 3 h du matin", "fait l'amour avec la télé allumée",
+    "couché après une dispute (maquillage torride)", "arrêté en pleine action — raconte pourquoi", "ri au lit au pire moment", "couché avec quelqu'un sans connaître son prénom",
+    "fait l'amour dans la voiture de tes parents", "couché avec les colocs dans la pièce d'à côté", "testé une position vue dans un film", "eu des marques visibles le lendemain",
+    "fait un jeu osé qui a fini au lit (comme ce soir ?)", "couché avec un(e) ami(e) puis plus jamais parlé de ça", "dit ça n'arrivera plus... puis re-couché",
+    "couché avec quelqu'un juste pour se venger", "eu un coup que tu racontes à tout le monde", "eu un coup que tu n'avoueras jamais (sauf ce soir ?)",
+    "testé dans l'eau (piscine ou mer)", "flirté juste pour un verre gratuit", "embrassé quelqu'un du même sexe", "été touché(e) sous la table en pleine soirée",
+    "rentré(e) à pied à 6 h du matin de honte", "couché avec ton/ta chef", "couché pendant tes règles (assumé ?)", "envoyé des photos en pleine réunion",
+    "porté les habits de l'autre le matin d'après", "eu un accident de préservatif (panique racontée)", "couché avec un(e) client(e) ou un(e) serveur/euse",
+    "eu une aventure avec quelqu'un en couple", "couché dans un dressing ou un parking", "eu un coup de foudre 100 % physique", "dormi nu(e) chez quelqu'un la première nuit",
+    "rechigné à partir au matin d'après", "mis fin à une relation pour une nuit", "gardé un plan en même temps qu'une relation",
+    "eu une histoire avec deux amis proches", "fait un tattoo lié à un plan — toujours là ?", "couché le jour de ton anniversaire avec un(e) inconnu(e)"
+  ];
+  const AVECY = ["couché", "embrassé", "flirté", "douché", "dormi", "fantasmé", "dansé collé-serré", "échangé des nudes", "été coincé(e) en pleine action", "joué à ce genre de jeu"];
+  const YQQN = ["quelqu'un de marié", "ton/ta chef", "un(e) voisin(e)", "l'ex d'un(e) ami(e)", "deux personnes le même jour", "quelqu'un rencontré le même soir", "ton/ta prof", "un(e) inconnu(e) dans un train", "le frère ou la sœur d'un ami", "quelqu'un présent(e) ce soir (pardon 😈)"];
+  const FANT = ["deux personnes en même temps", "un lieu public", "les menottes", "une longue douche à deux", "le grand miroir d'une chambre", "un(e) parfait(e) inconnu(e)", "une star", "le/la voisin(e) d'en face", "un bureau vide", "une plage la nuit", "une voiture en pleine ville", "un mariage (pas le tien)"];
+  const ANQ = ["cette année", "à deux reprises le même week-end", "en voyage", "avant tes 20 ans", "et que tu caches encore à tout le monde"];
+  const PREF4 = [
+    "un plan avec une star", "un plan d'un soir avec un(e) inconnu(e) magnifique", "une nuit avec ton crush de lycée", "un week-end entier au lit",
+    "un quickie avant le travail", "des préliminaires d'une heure", "un massage très lent", "un strip privé", "un baiser volé sous la pluie",
+    "une soirée qui finit à trois", "un plan en vacances", "un fantasme réalisé par messages", "un mois de relation secrète", "une déclaration torride en public",
+    "un câlin qui dégénère", "un plan dans une voiture", "un plan sous la douche", "un plan avec les lumières allumées", "un plan avec une bande-son choisie",
+    "un miroir face au lit", "les menottes", "la chantilly", "un rendez-vous qui commence par un massage", "un réveil à 3 h du matin pour un câlin",
+    "un plan avec un(e) ami(e) de longue date", "une histoire interdite", "un plan à l'hôtel avec vue", "un pique-nique qui tourne chaud", "un bain à deux",
+    "un plan un jour de pluie", "un plan juste avant un mariage", "un plan le jour de la Saint-Valentin", "un slow qui dure toute la nuit", "un petit-déjeuner au lit qui dégénère"
+  ];
+  QUESTIONS[4].verite.push(...fill([
+    ["As-tu déjà {x} ?", D4],
+    ["As-tu déjà {x} avec {y} ? Donne les détails.", AVECY, YQQN],
+    ["Ton fantasme qui implique {x} : raconte TOUT.", FANT],
+    ["Le truc le plus chaud que tu aies fait {x} ?", ANQ]
+  ]));
+  PREF4.forEach(a => PREF4.forEach(b => { if (a !== b) QUESTIONS[4].verite.push("Préfères-tu " + a + " ou " + b + " ? Défends ton choix devant le groupe 😈"); }));
+  /* --- Niveau 4 🌶️ CHAUD : actions --- */
+  const A1 = ["gémis le plus naturellement possible", "racontes ton dernier rêve coquin sans censure", "décris ce que tu portes et ce que tu enlèverais en premier", "chuchotes au joueur de ton choix ce que tu lui ferais ce soir", "imites ta voix séduction au téléphone", "décris ton dernier baiser en détail", "racontes ta première fois comme un reporter sportif", "expliques pourquoi tu es dangereux/dangereuse au lit"];
+  const A2 = ["ta position préférée", "un striptease lent", "une nuit entière résumée en 15 secondes", "ce que tu fais seul(e) le matin", "un baiser qui monte trop vite", "le moment le plus gênant de ta vie intime"];
+  const A3 = ["20 pompes en sous-vêtements", "ton meilleur regard de séduction sans rire", "un slow très collé en solo", "10 squats face cam en tenue (dé)correcte", "ta meilleure imitation de gémis de film", "une pose de mannequin en sous-vêtements"];
+  const A4 = ["Ce soir, je voudrais…", "La chose la plus folle que je ferais pour toi…", "Si on était seuls maintenant…", "Mon fantasme avec toi, c'est…", "Je n'ai jamais osé te dire que…"];
+  const A5 = ["ta nuit idéale avec lui/elle", "ta première heure si vous étiez en couple", "ton plan parfait, minute par minute"];
+  QUESTIONS[4].action.push(...fill([
+    ["Envoie un vocal de 15 secondes où tu {x}. 👄", A1],
+    ["Mime {x} pendant 15 secondes — le groupe doit deviner.", A2],
+    ["Fais {x} : cam ouverte, le groupe note sur 10.", A3],
+    ["Envoie au joueur de ton choix un message qui commence par « {x} »", A4],
+    ["Le groupe désigne quelqu'un : déclare-lui en 30 secondes {x}.", A5]
+  ]));
+  /* --- Niveau 3 🔥 DIRECT --- */
+  const D3 = ["envoyé un message à 2 h du matin pour un plan", "eu un rencard qui a fini très très tard", "flirté toute une soirée avec quelqu'un de pris", "gardé un plan secret à ton/ta meilleur(e) ami(e)", "couché avec quelqu'un que tu as revu ensuite en public", "eu un coup de foudre purement physique", "embrassé quelqu'un juste pour rendre quelqu'un d'autre jaloux", "regretté de ne pas avoir osé quelque chose (quoi ?)", "fini la nuit chez quelqu'un sans prévenir personne", "échangé des messages très osés avec un(e) inconnu(e)", "accepté un verre juste pour rester près de quelqu'un", "eu une histoire qui a mal fini (raconte)", "couché avec un(e) ami(e) sans que ça casse l'amitié", "reçu un cadeau très osé (lequel ?)", "eu un surnom dans l'intimité (lequel ?)", "été repeché(e) par un(e) ex", "testé un site ou une app de rencontre (verdict ?)", "eu le coup de foudre pour la voix de quelqu'un", "pensé à quelqu'un d'ici sous la douche", "gardé un contact flou juste pour le plaisir", "été en couple ET en même temps attiré(e) par quelqu'un d'autre", "reçu un compliment très osé qui t'a marqué(e)", "proposé un plan qui a été refusé (raconte le drame)", "refusé un plan et regretté (lequel ?)"];
+  const PREF3 = ["un dîner aux chandelles qui dégénère", "un massage qui s'éternise", "un baiser lent", "un baiser pressé", "une soirée dansante collée-serrée", "un chat coquin toute la nuit", "un vocal d'une heure", "un plan au réveil", "un plan avant de dormir", "une histoire d'un été", "une histoire d'un mois", "un crush que tu n'avoues jamais", "un secret partagé à deux", "un jeu de vérité qui monte", "un massage mis en musique", "un week-end sans téléphones à deux", "un bain à deux", "une sieste qui dégénère", "un baiser sous les étoiles", "un rendez-vous chez le/la voisin(e)", "un slow dans le salon", "un pique-nique secret", "un regard qui dure trop longtemps", "un sourire qui promet", "un câlin au cinéma", "un voyage à deux improvisé"];
+  QUESTIONS[3].verite.push(...fill([
+    ["As-tu déjà {x} ?", D3],
+    ["Préfères-tu {x} ou {y} ? Justifie 🔥", PREF3, PREF3]
+  ]));
+  const B3 = ["Fais 10 pompes, le groupe compte à voix haute", "Imite le rire de quelqu'un d'ici jusqu'à ce que quelqu'un ris", "Fais un discours de déclaration d'amour à la lampe la plus proche", "Danse sans musique pendant 20 secondes, très sérieusement", "Raconte ta dernière soirée en chantant", "Fais ta pub de séduction : 15 secondes pour te vendre"];
+  const C3 = ["Je pense très fort à toi quand…", "Ce qui me rend fou/folle chez toi…", "Si je devais t'embrasser maintenant…", "Mon plus beau souvenir avec toi (même inventé)…", "Je te préviens : avec moi, la nuit…", "La dernière fois que j'ai pensé à toi…"];
+  QUESTIONS[3].action.push(...fill([
+    ["{x} !", B3],
+    ["Envoie au joueur de ton choix un message qui commence par « {x} »", C3]
+  ]));
+  /* --- Niveaux 1-2 : petites touches --- */
+  const D2 = ["envoyé un message romantique à la mauvaise personne", "eu un crush sur un(e) ami(e) de longue date", "préparé un rencard parfait (raconte)", "fait un compliment hyper osé en public", "eu le béguin pour un(e) célébrité (qui ?)", "été surpris(e) à regarder quelqu'un un peu trop longtemps", " menti sur tes talents de séduction", "eu un rendez-vous entièrement payé par l'autre", "reçu un cadeau romantique inoubliable", "envoyé un vocal romantique", "danse collé-serré au ralenti", "eu un crush sur quelqu'un de ce groupe d'amis"];
+  const B2 = ["Fais ton plus bel aimant à sourire pendant 10 secondes", "Chante le refrain d'une chanson d'amour, très sérieusement", "Fais un compliment très classe à chaque joueur en 30 secondes", "Danse les yeux fermés, le groupe met la musique", "Imite un slow avec la chaise la plus proche", "Raconte ton pire rencard en imitant les personnages"];
+  const D1 = ["envoyé un message coquin au mauvais destinataire", "eu un crush sur un(e) prof", "stalké le profil de ton crush jusqu'en 2015", "menti pour éviter un rencard", "embrassé quelqu'un le premier soir", "fait un déclaration ratée (raconte le crash)"];
+  const B1 = ["Raconte ta plus grosse honte de soirée en imitant les gens", "Fais 10 abdominaux en rigolant", "Danse comme ton artiste préféré pendant 15 secondes", "Fais ta meilleure imitation d'un(e) joueur d'ici", "Chante joyeux anniversaire à quelqu'un d'ici, version opéra", "Montre ta dernière photo galerie (sans tricher !)"];
+  QUESTIONS[2].verite.push(...D2); QUESTIONS[2].action.push(...B2);
+  QUESTIONS[1].verite.push(...D1); QUESTIONS[1].action.push(...B1);
+  let tot = 0;
+  Object.keys(QUESTIONS).forEach(d => { tot += QUESTIONS[d].verite.length + QUESTIONS[d].action.length; });
+  console.log('📚 Banque de questions :', tot, '— 🌶️ niv.4 :', QUESTIONS[4].verite.length + QUESTIONS[4].action.length);
+})();
 
 function drawQuestion(room, type) {
   const bank = QUESTIONS[room.difficulty][type];
@@ -544,7 +645,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 16 · IA SANS SILENCE</div>
+    <div class="ver">VERSION 17 · BANQUE XXL + IA CHAUDE</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1130,7 +1231,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v16</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v17</div>
 </body>
 </html>`;
 
@@ -1323,7 +1424,7 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v16 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v17 — démarré sur le port', process.env.PORT || 3000);
   console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
   if (process.env.GROQ_API_KEY) {
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
