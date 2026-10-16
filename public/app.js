@@ -157,17 +157,27 @@ function setConn(state) {
     d.style.cssText = 'font-size:13px;font-weight:700;';
     card.prepend(d);
   }
-  if (state === 'ok') { d.textContent = '🟢 Connecté · v3'; d.style.color = 'var(--ok)'; }
-  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v3'; d.style.color = 'var(--hot)'; }
-  else { d.textContent = '🟡 Connexion... · v3'; d.style.color = 'var(--warn)'; }
+  if (state === 'ok') { d.textContent = '🟢 Connecté · v4'; d.style.color = 'var(--ok)'; }
+  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v4'; d.style.color = 'var(--hot)'; }
+  else { d.textContent = '🟡 Connexion... · v4'; d.style.color = 'var(--warn)'; }
 }
 socket.on('connect', () => {
   setConn('ok');
   if (!S) tryRejoin();               // refresh ou reconnexion : on reprend notre place
+  retryWaiting();                    // en attente d'acceptation ? on relance la demande
 });
 socket.on('connect_error', () => setConn('err'));
 socket.io.on('reconnect', () => setConn('ok'));
 setConn(socket.connected ? 'ok' : 'connecting');
+
+/* Réessai automatique tant que l'écran "en attente de l'admin" est affiché
+   (utile si le navigateur, ex. Instagram, a coupé la connexion entre-temps) */
+function retryWaiting() {
+  if ($('#screen-wait').classList.contains('active') && socket.connected && myName && myPendingCode) {
+    socket.emit('room:join', { name: myName, code: myPendingCode });
+  }
+}
+setInterval(retryWaiting, 8000);
 
 /* ================= Accueil ================= */
 function check18() {
@@ -212,7 +222,8 @@ socket.on('error:msg', (d) => {
   if (!S) showScreen('screen-home');
 });
 socket.on('join:waiting', () => { $('#wait-code').textContent = myPendingCode || ''; showScreen('screen-wait'); });
-socket.on('join:rejected', () => { toast(trE('full'), true); showScreen('screen-home'); });
+socket.on('join:rejected', () => { toast('❌ Demande expirée ou refusée — réessaie "Rejoindre"', true); showScreen('screen-home'); });
+socket.on('join:failed', (d) => { toast('❌ ' + (d?.name || 'Le joueur') + ' a perdu la connexion — il doit refaire "Rejoindre"', true); });
 socket.on('joined', (d) => {
   feedItems.length = 0; $('#feed').innerHTML = '';
   clearTimeout(clickWatchdog);
