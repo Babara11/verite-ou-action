@@ -157,9 +157,9 @@ function setConn(state) {
     d.style.cssText = 'font-size:13px;font-weight:700;';
     card.prepend(d);
   }
-  if (state === 'ok') { d.textContent = '🟢 Connecté · v4'; d.style.color = 'var(--ok)'; }
-  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v4'; d.style.color = 'var(--hot)'; }
-  else { d.textContent = '🟡 Connexion... · v4'; d.style.color = 'var(--warn)'; }
+  if (state === 'ok') { d.textContent = '🟢 Connecté · v5'; d.style.color = 'var(--ok)'; }
+  else if (state === 'err') { d.textContent = '🔴 Serveur injoignable — recharge · v5'; d.style.color = 'var(--hot)'; }
+  else { d.textContent = '🟡 Connexion... · v5'; d.style.color = 'var(--warn)'; }
 }
 socket.on('connect', () => {
   setConn('ok');
@@ -190,6 +190,7 @@ $('#btn-create').addEventListener('click', () => {
     const name = $('#in-name').value.trim();
     if (!name) { $('#in-name').focus(); toast(tr('needname')); return; }
     myName = name;
+    try { localStorage.setItem('voa_name', name); } catch (e) {}
     armedFeedback();
     socket.emit('room:create', { name, lang: 'fr', theme: 'neon', difficulty: 2 });
   } catch (err) { toast('⚠️ Erreur: ' + err.message, true); }
@@ -203,11 +204,16 @@ $('#btn-join').addEventListener('click', () => {
     if (code.length < 4) { $('#in-code').focus(); toast(tr('needcode')); return; }
     myName = name;
     myPendingCode = code;
+    try { localStorage.setItem('voa_name', name); localStorage.setItem('voa_wait', JSON.stringify({ code, name })); } catch (e) {}
     armedFeedback();
     socket.emit('room:join', { name, code });
   } catch (err) { toast('⚠️ Erreur: ' + err.message, true); }
 });
-$('#btn-wait-cancel').addEventListener('click', () => { myPendingCode = null; showScreen('screen-home'); });
+$('#btn-wait-cancel').addEventListener('click', () => {
+  myPendingCode = null;
+  try { localStorage.removeItem('voa_wait'); } catch (e) {}
+  showScreen('screen-home');
+});
 $('#btn-back-home').addEventListener('click', () => { clearSession(); location.reload(); });
 
 /* Lien d'invitation #join/CODE */
@@ -215,9 +221,29 @@ if (location.hash.startsWith('#join/')) {
   $('#in-code').value = location.hash.slice(6, 10).toUpperCase();
 }
 
+/* ============ Mémoire des formulaires (un refresh ne remplit RIEN à ta place) ============ */
+try {
+  const savedName = localStorage.getItem('voa_name');
+  if (savedName && !$('#in-name').value) $('#in-name').value = savedName;
+} catch (e) {}
+// Reprendre une demande d'entrée en attente après un refresh
+try {
+  const w = JSON.parse(localStorage.getItem('voa_wait') || 'null');
+  if (w && w.code && w.name && !readSession()) {
+    myName = w.name; myPendingCode = w.code;
+    $('#in-code').value = w.code;
+    $('#wait-code').textContent = w.code;
+    showScreen('screen-wait');
+    socket.emit('room:join', { name: w.name, code: w.code });
+  }
+} catch (e) {}
+
 /* ================= Socket ================= */
 socket.on('error:msg', (d) => {
-  if (['notfound', 'expired', 'full'].includes(d.key)) clearSession();
+  if (['notfound', 'expired', 'full'].includes(d.key)) {
+    clearSession();
+    try { localStorage.removeItem('voa_wait'); } catch (e) {}
+  }
   toast(trE(d.key), true);
   if (!S) showScreen('screen-home');
 });
@@ -227,6 +253,7 @@ socket.on('join:failed', (d) => { toast('❌ ' + (d?.name || 'Le joueur') + ' a 
 socket.on('joined', (d) => {
   feedItems.length = 0; $('#feed').innerHTML = '';
   clearTimeout(clickWatchdog);
+  try { localStorage.removeItem('voa_wait'); } catch (e) {}
   if (d && d.code) toast('✅ Salon ' + d.code + ' prêt !', true);
 });
 socket.on('feed:init', (d) => { d.feed.forEach(addFeedItem); renderFeed(); });
@@ -279,14 +306,17 @@ function renderLobby() {
     const p = S.players[i];
     const card = document.createElement('div');
     card.className = 'pcard' + (p ? (p.connected ? '' : ' offline') : ' empty');
+    const num = document.createElement('div'); num.className = 'slotnum'; num.textContent = 'Case ' + (i + 1);
+    card.appendChild(num);
     if (p) {
       if (p.isAdmin) { const c = document.createElement('div'); c.className = 'crown'; c.textContent = '👑'; card.appendChild(c); }
       const nm = document.createElement('div'); nm.className = 'pname';
-      nm.textContent = p.name + (p.id === socket.id ? ' ' + tr('you') : '');
+      nm.textContent = (p.isBot ? '🤖 ' : '') + p.name + (p.id === socket.id ? ' ' + tr('you') : '');
       card.appendChild(nm);
       if (p.misses > 0) { const w = document.createElement('div'); w.textContent = '⚠️'.repeat(p.misses); card.appendChild(w); }
     } else {
-      card.textContent = '➕';
+      const e = document.createElement('div'); e.textContent = '➕ libre';
+      card.appendChild(e);
     }
     grid.appendChild(card);
   }
@@ -342,6 +372,7 @@ socket.on('join:pending', (d) => {
   });
 });
 $('#btn-start').addEventListener('click', () => socket.emit('game:start'));
+$('#btn-addbot').addEventListener('click', () => socket.emit('bot:add'));
 $('#btn-leave-lobby').addEventListener('click', confirmLeave);
 $('#btn-stop-game').addEventListener('click', () => {
   if (confirm(tr('confirmStop'))) socket.emit('game:stop');
@@ -439,29 +470,45 @@ function renderGame() {
 function renderPlayersStrip() {
   const wrap = $('#g-players'); wrap.innerHTML = '';
   const m = me();
-  S.players.forEach(p => {
-    const chip = document.createElement('div');
-    chip.className = 'gp' + (p.id === socket.id ? ' me' : '') + (p.paused ? ' paused' : '') +
-      (S.turn && S.turn.targetId === p.id ? ' target' : '');
-    if (p.isAdmin) { const c = document.createElement('span'); c.textContent = '👑'; chip.appendChild(c); }
-    const nm = document.createElement('span'); nm.className = 'nm';
-    nm.textContent = p.name + (p.id === socket.id ? ' ' + tr('you') : '');
-    chip.appendChild(nm);
-    if (p.misses > 0) { const w = document.createElement('span'); w.className = 'warn'; w.textContent = '⚠️' + p.misses; chip.appendChild(w); }
-    if (p.paused) { const z = document.createElement('span'); z.className = 'zzz'; z.textContent = p.pauseExpired ? '⏸️>5\u2019' : '⏸️'; chip.appendChild(z); }
-    if (!p.connected) { const o = document.createElement('span'); o.textContent = '📴'; chip.appendChild(o); }
-    if (m && m.isAdmin && p.id !== socket.id) {
-      const kp = document.createElement('button'); kp.className = 'mini'; kp.title = tr('confirmPromote'); kp.textContent = '👑';
-      kp.onclick = () => { if (confirm(tr('confirmPromote'))) socket.emit('player:promote', { id: p.id }); };
-      const kx = document.createElement('button'); kx.className = 'mini red'; kx.title = tr('confirmKick'); kx.textContent = '✖';
-      kx.onclick = () => { if (confirm(tr('confirmKick'))) socket.emit('player:kick', { id: p.id }); };
-      chip.append(kp, kx);
+  for (let i = 0; i < S.maxPlayers; i++) {
+    const p = S.players[i];
+    const card = document.createElement('div');
+    card.className = 'gcard' + (p ? '' : ' empty') +
+      (p && p.id === socket.id ? ' me' : '') +
+      (p && p.paused ? ' paused' : '') +
+      (p && S.turn && S.turn.targetId === p.id ? ' target' : '');
+    const num = document.createElement('div'); num.className = 'slotnum'; num.textContent = 'C' + (i + 1);
+    card.appendChild(num);
+    if (p) {
+      const top = document.createElement('div'); top.className = 'grow';
+      if (p.isAdmin) { const c = document.createElement('span'); c.textContent = '\u{1F451}'; top.appendChild(c); }
+      const nm = document.createElement('span'); nm.className = 'nm';
+      nm.textContent = (p.isBot ? '\u{1F916} ' : '') + p.name;
+      top.appendChild(nm);
+      card.appendChild(top);
+      const flags = [];
+      if (p.misses > 0) flags.push('\u26A0\uFE0F' + p.misses);
+      if (p.paused) flags.push(p.pauseExpired ? '\u23F8\uFE0F>5m' : '\u23F8\uFE0F');
+      if (!p.connected && !p.isBot) flags.push('📴');
+      if (flags.length) { const f = document.createElement('div'); f.className = 'flags'; f.textContent = flags.join(' '); card.appendChild(f); }
+      if (m && m.isAdmin && p.id !== socket.id) {
+        const btns = document.createElement('div'); btns.className = 'gbtns';
+        const kp = document.createElement('button'); kp.className = 'mini'; kp.title = tr('confirmPromote'); kp.textContent = '\u{1F451}';
+        kp.onclick = () => { if (confirm(tr('confirmPromote'))) socket.emit('player:promote', { id: p.id }); };
+        const kx = document.createElement('button'); kx.className = 'mini red'; kx.title = tr('confirmKick'); kx.textContent = '\u2716';
+        kx.onclick = () => { if (confirm(tr('confirmKick'))) socket.emit('player:kick', { id: p.id }); };
+        btns.append(kp, kx); card.appendChild(btns);
+      }
+    } else if (m && m.isAdmin) {
+      const add = document.createElement('button'); add.className = 'mini addbot'; add.title = 'Ajouter un bot ici'; add.textContent = '+ \u{1F916}';
+      add.onclick = () => socket.emit('bot:add');
+      card.appendChild(add);
     }
-    wrap.appendChild(chip);
-  });
+    wrap.appendChild(card);
+  }
   // bouton pause perso
   const pb = document.createElement('button');
-  pb.className = 'btn small';
+  pb.className = 'btn small pausebtn';
   pb.textContent = m.paused ? tr('resume') : tr('pauseme');
   pb.title = tr('pausetip');
   pb.onclick = () => socket.emit('player:pause', { paused: !m.paused });
