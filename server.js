@@ -104,6 +104,7 @@ function serialize(room) {
       .map(p => ({
         id: p.id, name: p.name, isAdmin: p.isAdmin, misses: p.misses,
         paused: p.paused, pausedAt: p.pausedAt, connected: p.connected,
+        isBot: !!p.isBot,
         pauseExpired: p.paused && now - p.pausedAt > PAUSE_LIMIT,
       })),
     turn: room.turn ? {
@@ -161,11 +162,15 @@ function beginChoosing(room) {
   if (!t || !t.connected || t.paused) return nextTurn(room);
   room.phase = 'choosing';
   room.turn = { targetId: t.id, deadline: Date.now() + CHOICE_TIME };
-  room.timer = setTimeout(() => {
-    if (registerMiss(room, t)) return;
-    sysFeed(room, 'skipchoice', { name: t.name });
-    nextTurn(room);
-  }, CHOICE_TIME);
+  if (t.isBot) {
+    room.timer = setTimeout(() => beginAnswering(room, Math.random() < 0.5 ? 'verite' : 'action'), 1500 + Math.random() * 2000);
+  } else {
+    room.timer = setTimeout(() => {
+      if (registerMiss(room, t)) return;
+      sysFeed(room, 'skipchoice', { name: t.name });
+      nextTurn(room);
+    }, CHOICE_TIME);
+  }
   broadcast(room);
 }
 
@@ -174,11 +179,21 @@ function beginAnswering(room, type) {
   const q = drawQuestion(room, type);
   room.phase = 'answering';
   room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false };
-  room.timer = setTimeout(() => {
-    if (registerMiss(room, t)) return;
-    sysFeed(room, 'skipanswer', { name: t.name });
-    nextTurn(room);
-  }, ANSWER_TIME);
+  if (t.isBot) {
+    room.timer = setTimeout(() => {
+      const ANS = room.lang === 'en'
+        ? ["Hmm... my answer is YES. Period.", "It's complicated 😬", "True, but keep it secret 🤫", "I refuse to answer 😂", "I knew it, and I'm ashamed 😅", "Ask the next player!"]
+        : ["Oula... je refuse de répondre 😂", "Ma réponse est OUI. Point.", "Franchement ? C'est compliqué 😬", "C'est vrai mais chut 🤫", "Je le savais, et j'ai honte 😅", "Demandez au prochain !"];
+      pushFeed(room, { kind: 'answer', mid: t.id, name: t.name, text: pick(ANS) });
+      beginReacting(room);
+    }, 2500 + Math.random() * 4500);
+  } else {
+    room.timer = setTimeout(() => {
+      if (registerMiss(room, t)) return;
+      sysFeed(room, 'skipanswer', { name: t.name });
+      nextTurn(room);
+    }, ANSWER_TIME);
+  }
   broadcast(room);
 }
 
@@ -415,6 +430,21 @@ io.on('connection', (socket) => {
     const p = room.players.get(socket.id); if (!p) return;
     if (!EMOJIS.includes(emoji)) return;
     io.to(room.code).emit('reaction', { emoji, name: p.name });
+  });
+
+  socket.on('bot:add', () => {
+    const room = socketRoom.get(socket.id); if (!room || room.closed) return;
+    const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
+    if (room.players.size >= MAX_PLAYERS) return socket.emit('error:msg', { key: 'full' });
+    const NAMES = room.lang === 'en'
+      ? ['Bot Ava', 'Bot Marcus', 'Bot Lena', 'Bot Sam']
+      : ['Bot Awa', 'Bot Modou', 'Bot Fatou', 'Bot Serigne'];
+    const used = new Set([...room.players.values()].map(p => p.name));
+    const nm = NAMES.find(n => !used.has(n)) || ('Bot ' + Math.floor(Math.random() * 90 + 10));
+    const bot = { id: 'bot_' + Date.now().toString(36) + Math.floor(Math.random() * 99), name: nm, isAdmin: false, misses: 0, paused: false, pausedAt: 0, connected: true, disconnectedAt: 0, joinedAt: Date.now(), isBot: true };
+    room.players.set(bot.id, bot);
+    sysFeed(room, 'joined', { name: nm });
+    broadcast(room);
   });
 
   socket.on('player:pause', ({ paused } = {}) => {
