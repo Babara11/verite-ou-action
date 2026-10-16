@@ -176,3 +176,22 @@ body {
   .chat-zone { grid-column: 2; grid-row: 1 / 5; position: sticky; top: 70px; }
   .feed { max-height: 55vh; }
 }
+
+/* ---- Grille de 6 cases (écran de jeu, comme le lobby) ---- */
+#g-players { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gcard {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
+  padding: 8px 8px 10px; min-height: 74px; display: flex; flex-direction: column;
+  gap: 4px; align-items: flex-start; justify-content: center; position: relative;
+}
+.gcard .slotnum, .pcard .slotnum { position: absolute; top: 4px; right: 7px; font-size: 9.5px; color: var(--mut); font-weight: 800; letter-spacing: .5px; }
+.gcard .grow { display: flex; align-items: center; gap: 5px; max-width: 100%; }
+.gcard .nm { font-size: 13px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.gcard .flags { font-size: 11px; color: var(--warn); }
+.gcard .gbtns { display: flex; gap: 5px; }
+.gcard.me { border-color: var(--hot2); }
+.gcard.target { border-color: var(--hot); box-shadow: 0 0 12px color-mix(in srgb, var(--hot) 55%, transparent); }
+.gcard.paused { opacity: .55; }
+.gcard.empty { border-style: dashed; opacity: .45; }
+.mini.addbot { border: 1.5px dashed var(--mut); color: var(--mut); font-weight: 800; padding: 6px 10px; border-radius: 10px; cursor: pointer; background: transparent; }
+.pausebtn { grid-column: 1 / -1; }
