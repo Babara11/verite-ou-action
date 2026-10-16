@@ -255,7 +255,7 @@ function beginChoosing(room) {
   room.phase = 'choosing';
   room.turn = { targetId: t.id, deadline: Date.now() + CHOICE_TIME };
   if (t.isBot) {
-    room.timer = setTimeout(() => beginAnswering(room, Math.random() < 0.5 ? 'verite' : 'action'), 1500 + Math.random() * 2000);
+    room.timer = setTimeout(() => beginAnswering(room, Math.random() < 0.5 ? 'verite' : 'action'), 6000 + Math.random() * 4000);
   } else {
     room.timer = setTimeout(() => {
       if (miss(room, t)) return;
@@ -280,11 +280,11 @@ async function aiQuestion(diff, type, name, gender) {
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 250, response_format: { type: 'json_object' } }),
       signal: AbortSignal.timeout(9000),
     });
-    if (!r.ok) return null;
+    if (!r.ok) { console.log('⚠️ IA erreur HTTP', r.status); return null; }
     const j = await r.json();
     const q = JSON.parse(j.choices[0].message.content).question;
     return (typeof q === 'string' && q.length > 8 && q.length < 500) ? q.trim() : null;
-  } catch (e) { return null; }
+  } catch (e) { console.log('⚠️ IA indisponible :', e.message); return null; }
 }
 
 function beginAnswering(room, type) {
@@ -380,11 +380,12 @@ const HTML = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store">
 <title>Vérité ou Action 🔥 18+</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+html, body { overscroll-behavior: none; }
 :root { --bg:#0b0b14; --bg2:#14142a; --card:#1b1b36; --line:#2d2d55; --txt:#f2f2fa; --mut:#9a9ac0; --hot:#ff2e63; --hot2:#ff7a3d; --ok:#21c07a; --warn:#ffb020; }
 body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg) 60%); color: var(--txt); min-height: 100vh; }
 .screen { display: none; min-height: 100vh; padding-bottom: 24px; }
@@ -480,7 +481,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 10 · MÉDIAS + ALERTES + FILE PLIABLE</div>
+    <div class="ver">VERSION 11 · MOBILE PARFAIT</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -624,6 +625,26 @@ function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 
+/* ---------- Mobile : bloquer le zoom à 2 doigts ---------- */
+document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+
+/* ---------- Mobile : boutons ultra réactifs (tap instantané) ---------- */
+function tap(el, fn) {
+  if (!el) return;
+  var last = 0;
+  function fire(e) {
+    var t = Date.now();
+    if (t - last < 600) { if (e.cancelable) e.preventDefault(); return; }  // anti double-déclenchement
+    last = t;
+    if (e.cancelable) e.preventDefault();
+    fn(e);
+  }
+  el.addEventListener('touchend', fire, { passive: false });
+  el.addEventListener('click', fire);
+}
+
 /* ---------- Navigateur intégré (Instagram...) : alerte + copie du lien ---------- */
 (function () {
   var UA = navigator.userAgent || '';
@@ -677,32 +698,32 @@ socket.on('room:closed', function () { del('voa_code'); S = null; show('s-end');
 var myGender = read('voa_gender') || 'homme';
 (function () {
   var gr = document.querySelectorAll('#genderrow .btn');
+  function paint() { for (var j = 0; j < gr.length; j++) gr[j].classList.toggle('sel', gr[j].dataset.g === myGender); }
+  paint();
   for (var i = 0; i < gr.length; i++) {
-    gr[i].classList.toggle('sel', gr[i].dataset.g === myGender);
-    gr[i].onclick = function () {
-      myGender = this.dataset.g; save('voa_gender', myGender);
-      for (var j = 0; j < gr.length; j++) gr[j].classList.toggle('sel', gr[j].dataset.g === myGender);
-    };
+    (function (btn) {
+      tap(btn, function () { myGender = btn.dataset.g; save('voa_gender', myGender); paint(); });
+    })(gr[i]);
   }
 })();
 var gIcon = function (p) { return (p && p.gender === 'femme') ? '\uD83D\uDC69 ' : '\uD83D\uDC68 '; };
 
 /* ---------- Accueil ---------- */
-$('#btn-create').onclick = function () {
+tap($('#btn-create'), function () {
   if (!$('#age18').checked) return toast('Confirme d\u2019abord que tu as 18 ans 🍾');
   var n = $('#in-name').value.trim();
   if (!n) { $('#in-name').focus(); return toast('Choisis ton pseudo 😄'); }
   myName = n; save('voa_name', n);
   socket.emit('room:create', { name: n, difficulty: 2, gender: myGender });
-};
-$('#btn-join').onclick = function () {
+});
+tap($('#btn-join'), function () {
   if (!$('#age18').checked) return toast('Confirme d\u2019abord que tu as 18 ans 🍾');
   var n = $('#in-name').value.trim(), c = $('#in-code').value.trim().toUpperCase();
   if (!n) { $('#in-name').focus(); return toast('Choisis ton pseudo 😄'); }
   if (c.length < 4) { $('#in-code').focus(); return toast('Tape le code à 4 lettres 🔤'); }
   myName = n; myPending = c; save('voa_name', n);
   socket.emit('room:join', { name: n, code: c, gender: myGender });
-};
+});
 $('#btn-wait-cancel').onclick = function () { myPending = null; del('voa_code'); show('s-home'); };
 $('#btn-home').onclick = function () { location.reload(); };
 (function () {
@@ -770,7 +791,7 @@ $('#btn-addbot').onclick = function () { socket.emit('bot:add'); };
 $('#btn-start').onclick = function () { socket.emit('game:start'); };
 $('#btn-leave-lobby').onclick = function () { socket.emit('room:leave'); del('voa_code'); S = null; show('s-home'); };
 document.querySelectorAll('#diffrow .btn').forEach(function (b) {
-  b.onclick = function () { socket.emit('difficulty', { d: +b.dataset.d }); };
+  tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
 });
 function inviteLink() { return '🔥 On joue à Vérité ou Action (18+) ! Rejoins ma partie : ' + location.origin + '/#/join/' + S.code; }
 $('#btn-invite').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
@@ -1226,5 +1247,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v10 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v11 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
 });
