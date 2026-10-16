@@ -275,6 +275,7 @@ io.on('connection', (socket) => {
     if (!room) return socket.emit('error:msg', { key: 'notfound' });
     if (room.players.size >= MAX_PLAYERS) return socket.emit('error:msg', { key: 'full' });
     if (Date.now() >= room.inviteAt + INVITE_TTL) return socket.emit('error:msg', { key: 'expired' });
+    room.pending = room.pending.filter(r => r.name.toLowerCase() !== name.toLowerCase());
     room.pending.push({ id: socket.id, name, at: Date.now() });
     room.pending = room.pending.filter(r => Date.now() - r.at < 60000).slice(-4);
     socket.join(room.code); // reçoit les états en attente de validation
@@ -290,12 +291,50 @@ io.on('connection', (socket) => {
     room.pending = room.pending.filter(r => r.id !== id);
     io.to(room.code).emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
     const targetSock = io.sockets.sockets.get(id);
-    if (!ok || !targetSock) { io.to(id).emit('join:rejected'); return; }
+    if (!ok || !targetSock) {
+      io.to(id).emit('join:rejected');                            // si le socket revit
+      io.to(socket.id).emit('join:failed', { name: req.name });   // feedback admin : la personne a perdu la connexion
+      return;
+    }
     if (room.players.size >= MAX_PLAYERS) { io.to(id).emit('error:msg', { key: 'full' }); return; }
     const p = addPlayer(room, targetSock, req.name, false);
     targetSock.emit('joined', { code: room.code });
     io.to(id).emit('feed:init', { feed: room.feed.slice(-FEED_MAX) });
     broadcast(room);
+  });
+
+  socket.on('room:rejoin', (data = {}) => {
+    if (socketRoom.has(socket.id)) return;
+    const room = rooms.get(String(data.code || '').toUpperCase().trim());
+    const name = cleanName(data.name);
+    if (!room) return socket.emit('error:msg', { key: 'notfound' });
+    // Reprendre la place d'un joueur du même nom (refresh, reconnexion, onglet rouvert)
+    const p = [...room.players.values()].find(pl => pl.name.toLowerCase() === name.toLowerCase());
+    if (p) {
+      room.players.delete(p.id);
+      socketRoom.delete(p.id);
+      p.id = socket.id; p.connected = true; p.disconnectedAt = 0;
+      room.players.set(socket.id, p);
+      socket.join(room.code);
+      socketRoom.set(socket.id, room);
+      socket.emit('joined', { code: room.code });
+      io.to(socket.id).emit('feed:init', { feed: room.feed.slice(-FEED_MAX) });
+      sysFeed(room, 'rejoined', { name });
+      broadcast(room);
+      return;
+    }
+    // Sinon : demande classique (si lien valide et place disponible)
+    if (room.players.size >= MAX_PLAYERS) return socket.emit('error:msg', { key: 'full' });
+    if (Date.now() >= room.inviteAt + INVITE_TTL) {
+      room.inviteAt = Date.now() - INVITE_TTL; // expiré : on refuse, l'admin devra repartager
+      return socket.emit('error:msg', { key: 'expired' });
+    }
+    room.pending = room.pending.filter(r => r.name.toLowerCase() !== name.toLowerCase());
+    room.pending.push({ id: socket.id, name, at: Date.now() });
+    room.pending = room.pending.filter(r => Date.now() - r.at < 60000).slice(-4);
+    socket.join(room.code);
+    socket.emit('join:waiting', { code: room.code });
+    io.to(room.code).emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
   });
 
   socket.on('room:leave', () => {
@@ -417,6 +456,11 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const room = socketRoom.get(socket.id); if (!room || room.closed) return;
+    // visiteur en attente qui se déconnecte → on retire sa demande
+    if (room.pending.some(r => r.id === socket.id)) {
+      room.pending = room.pending.filter(r => r.id !== socket.id);
+      io.to(room.code).emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
+    }
     const p = room.players.get(socket.id); if (!p) return;
     p.connected = false;
     p.disconnectedAt = Date.now();
