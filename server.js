@@ -669,16 +669,21 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .wrap { max-width: 560px; margin: 12px auto; padding: 0 12px; display: flex; flex-direction: column; gap: 12px; }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
 .panel h3 { font-size: 15px; margin-bottom: 10px; }
-.grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 @media (min-width: 560px) { .grid6 { grid-template-columns: repeat(6, 1fr); } }
-.cell { position: relative; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 4px 8px; min-height: 70px; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; }
-.cell .num { position: absolute; top: 3px; left: 7px; font-size: 9px; color: var(--mut); }
-.cell .dot { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--hot); }
+.cell { position: relative; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 3px 6px; min-height: 46px; display: flex; flex-direction: column; gap: 1px; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; overflow: hidden; }
+.cell > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell .num { position: absolute; top: 2px; left: 5px; font-size: 8px; color: var(--mut); }
+.cell .dot { position: absolute; top: 3px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--hot); }
 .cell .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 .cell.empty { border-style: dashed; opacity: .45; }
 .cell.me { border-color: var(--hot2); }
 .cell.target { border-color: var(--hot); box-shadow: 0 0 10px rgba(255,46,99,.6); }
-.cell .x { position: absolute; bottom: 3px; right: 4px; border: none; background: transparent; color: var(--hot); cursor: pointer; font-size: 11px; }
+.cell .x { position: absolute; bottom: 1px; right: 2px; border: none; background: transparent; color: var(--hot); cursor: pointer; font-size: 10px; }
+.howto { margin: 8px 0 2px; text-align: left; font-size: 12.5px; background: var(--bg2); border: 1px dashed var(--line); border-radius: 12px; padding: 8px 11px; }
+.howto summary { cursor: pointer; font-weight: 800; color: var(--hot2); }
+.howto-body { margin-top: 7px; line-height: 1.55; color: var(--mut); }
+.phasehint { font-size: 12px; color: var(--mut); text-align: center; margin: 2px 0 4px; }
 .pending { background: var(--card); border: 1.5px solid var(--warn); border-radius: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; }
 .pending span { flex: 1; }
 .diffrow { display: flex; gap: 8px; }
@@ -735,12 +740,22 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 19 · TOUS LES MAÎTRES DE LA ROUE</div>
+    <div class="ver">VERSION 21 · SIMPLE POUR LES DÉBUTANTS</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
       <button class="btn" data-g="femme">👩 Femme</button>
     </div>
+    <details class="howto">
+      <summary>🎲 Première fois ? Comment ça marche (30 sec)</summary>
+      <div class="howto-body">
+        👑 <b>1.</b> Un joueur crée le salon et partage le code à 4 lettres (bouton 💬).<br>
+        🚪 <b>2.</b> Les autres tapent leur pseudo + le code puis « Rejoindre » (6 max).<br>
+        🎡 <b>3.</b> La roue désigne quelqu un : il choisit 💬 <b>Vérité</b> (répond honnêtement) ou 🎯 <b>Action</b> (fait le défi).<br>
+        🔥 <b>4.</b> Il répond par texte, vocal 🎤, photo 📷 ou vidéo 🎬 — puis <b>tout le monde</b> peut relancer la roue.<br>
+        🌶️ <b>5.</b> L admin monte le niveau quand ça chauffe. 2 tours sans répondre = éliminé. Tout s efface à la fin 🧹
+      </div>
+    </details>
     <input type="text" id="in-name" class="input" maxlength="14" placeholder="Ton pseudo...">
     <button id="btn-create" class="btn big primary">🎓 CRÉER UN SALON</button>
     <div class="divider">— ou —</div>
@@ -770,7 +785,8 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="panel">
       <h3>👥 Les 6 cases <span class="hint" id="count"></span></h3>
       <div class="grid6" id="lobby-grid"></div>
-      <p class="hint" style="margin-top:8px">Il faut au moins 2 joueurs. 🤖 = robot de test qui joue tout seul.</p>
+      <p class="hint" style="margin-top:6px">Il faut au moins 2 joueurs. 🤖 = robot de test qui joue tout seul.</p>
+      <p class="hint" style="margin-top:4px">🎡 La roue désigne → 💬 Vérité ou 🎯 Action → il répond (texte, vocal, photo, vidéo) → tout le monde peut relancer !</p>
     </div>
     <div class="panel">
       <h3>🔥 Difficulté des questions</h3>
@@ -796,6 +812,14 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
   <div class="wrap">
     <div class="grid6" id="game-grid"></div>
     <div id="phase">…</div>
+    <div class="phasehint" id="phasehint"></div>
+    <div id="gamediff" style="display:flex;gap:6px;justify-content:center;align-items:center;margin:2px 0 8px;flex-wrap:wrap">
+      <span class="hint" id="gamediff-label" style="font-weight:800"></span>
+      <button class="btn small gd" data-d="1" style="padding:6px 10px">😄</button>
+      <button class="btn small gd" data-d="2" style="padding:6px 10px">😏</button>
+      <button class="btn small gd" data-d="3" style="padding:6px 10px">🔥</button>
+      <button class="btn small gd" data-d="4" style="padding:6px 10px">🌶️</button>
+    </div>
     <div class="timetrack" id="timetrack" hidden><div class="timefill" id="timefill"></div></div>
     <div class="wheelzone">
       <canvas id="wheel" width="560" height="560"></canvas>
@@ -1063,6 +1087,9 @@ $('#btn-leave-lobby').onclick = function () { socket.emit('room:leave'); del('vo
 document.querySelectorAll('#diffrow .btn').forEach(function (b) {
   tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
 });
+document.querySelectorAll('#gamediff .gd').forEach(function (b) {
+  tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
+});
 function inviteLink() { return '🔥 On joue à Vérité ou Action (18+) ! Rejoins ma partie : ' + location.origin + '/#/join/' + S.code; }
 $('#btn-invite').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
 $('#btn-invite2').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
@@ -1086,6 +1113,23 @@ function renderGame() {
   else if (S.phase === 'answering') ph.textContent = isMe ? '💬 Réponds sans filtrer (2 min) !' : '💬 ' + (tp ? tp.name : '?') + ' répond...';
   else if (S.phase === 'reacting') ph.textContent = '🔥 Réactions… 🎯 TOUS peuvent lancer la roue !';
   else ph.textContent = '⏸️ En pause...';
+  var hint = $('#phasehint');
+  if (hint) {
+    if (S.phase === 'spinning') hint.textContent = 'La roue cherche sa victime… 😈';
+    else if (S.phase === 'choosing') hint.textContent = isMe ? '💬 Vérité = répondre honnêtement · 🎯 Action = oser le défi' : 'C est le moment de ' + (tp ? tp.name : '?') + '… respire 😈';
+    else if (S.phase === 'answering') hint.textContent = isMe ? 'Réponds comme tu veux : texte 💬, vocal 🎤, photo 📷 ou vidéo 🎬' : 'Laisse ' + (tp ? tp.name : '?') + ' répondre… et prépare tes réactions 🔥';
+    else if (S.phase === 'reacting') hint.textContent = 'Réagissez avec les emoji… et n importe qui tape 🎯 pour relancer !';
+    else hint.textContent = '';
+  }
+  var gd = $('#gamediff'), gdl = $('#gamediff-label');
+  if (gd && gdl) {
+    gdl.textContent = 'Niveau : ' + ['😄 Facile', '😏 Moyen', '🔥 Direct', '🌶️ CHAUD'][S.difficulty - 1];
+    var gdb = gd.querySelectorAll('.gd');
+    for (var gi = 0; gi < gdb.length; gi++) {
+      gdb[gi].classList.toggle('sel', +gdb[gi].dataset.d === S.difficulty);
+      gdb[gi].style.display = isAdmin() ? '' : 'none';
+    }
+  }
   var showT = t && t.deadline && PH[S.phase];
   $('#timetrack').hidden = !showT;
   $('#choice').hidden = !(S.phase === 'choosing' && isMe);
@@ -1327,7 +1371,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v19</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v21</div>
 </body>
 </html>`;
 
@@ -1397,7 +1441,7 @@ io.on('connection', (socket) => {
   socket.on('difficulty', ({ d } = {}) => {
     const room = socketRoom.get(socket.id); if (!room) return;
     const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
-    if ([1, 2, 3, 4].includes(+d)) { room.difficulty = +d; sys(room, 'Difficulté : ' + ['Facile 😄', 'Moyen 😏', 'Direct 🔥', 'CHAUD 🌶️'][+d - 1]); broadcast(room); }
+    if ([1, 2, 3, 4].includes(+d) && +d !== room.difficulty) { room.difficulty = +d; sys(room, '🎛️ ' + me.name + ' passe le niveau sur : ' + ['Facile 😄', 'Moyen 😏', 'Direct 🔥', 'CHAUD 🌶️ 🌶️'][+d - 1] + ' — la prochaine question arrive !'); broadcast(room); }
   });
 
   socket.on('invite:refresh', () => {
@@ -1533,6 +1577,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v19 — démarré sur le port', process.env.PORT || 3000);
-  console.log('🚫 IA désactivée (v19) — questions 100% banque locale XXL');
+  console.log('🌶️ Vérité ou Action v21 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🚫 IA désactivée (v21) — questions 100% banque locale XXL');
 });
