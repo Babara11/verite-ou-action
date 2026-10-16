@@ -211,6 +211,7 @@ function serialize(room) {
       answered: !!room.turn.answered,
       ai: !!room.turn.ai,
     } : null,
+    aiErr: room.aiErr || null,
     maxPlayers: MAX_PLAYERS,
     maxMisses: MAX_MISSES,
   };
@@ -293,7 +294,7 @@ async function pickModel() {
 /* Alerte IA : une seule fois par salon jusqu'au prochain succès (pas de spam) */
 function aiWarn(room, msg) {
   console.log('⚠️ IA :', msg);
-  if (room && !room.aiWarned) { sys(room, '⚠️ ' + msg); room.aiWarned = true; }
+  if (room) { room.aiErr = msg; if (!room.aiWarned) { sys(room, '⚠️ ' + msg); room.aiWarned = true; } }
 }
 
 async function aiQuestion(room, diff, type, name, gender) {
@@ -340,7 +341,7 @@ function beginAnswering(room, type) {
   // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
   aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
     if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
-      room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false;
+      room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false; room.aiErr = null;
       broadcast(room);
     }
   });
@@ -349,7 +350,7 @@ function beginAnswering(room, type) {
       const ANS = ['Oula... je refuse de répondre 😂', 'Ma réponse est OUI. Point.', 'Franchement ? C\u2019est compliqué 😬', 'C\u2019est vrai mais chut 🤫', 'Je le savais, et j\u2019ai honte 😅', 'Demandez au prochain !'];
       pushFeed(room, { kind: 'answer', mid: t.id, name: t.name, text: pick(ANS) });
       beginReacting(room);
-    }, 2500 + Math.random() * 4500);
+    }, 8000 + Math.random() * 5000);
   } else {
     room.timer = setTimeout(() => {
       if (miss(room, t)) return;
@@ -526,7 +527,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 14 · IA ANTI-404</div>
+    <div class="ver">VERSION 15 · IA TRANSPARENTE</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1112,7 +1113,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v14</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v15</div>
 </body>
 </html>`;
 
@@ -1305,6 +1306,12 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v14 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v15 — démarré sur le port', process.env.PORT || 3000);
   console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
+  if (process.env.GROQ_API_KEY) {
+    fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
+      .then(r => { if (!r.ok) { console.log('🤖 IA vérification clé : HTTP', r.status, r.status === 401 ? '→ CLÉ INVALIDE, recrée-la sur console.groq.com' : ''); return null; } return r.json(); })
+      .then(j => { if (j && j.data) console.log('🤖 IA vérification clé : OK ✅ — modèles dispo :', j.data.map(m => m.id).slice(0, 6).join(', ')); })
+      .catch(e => console.log('🤖 IA vérification clé : injoignable', e.message));
+  }
 });
