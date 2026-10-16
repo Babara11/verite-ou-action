@@ -598,6 +598,89 @@ function removePlayer(room, id, kicked) {
 
   QUESTIONS[4].verite.push(...fill([['Tu ne gardes qu un : {x} ou {y} ? Trop tard, tu réponds 😏', PREF4ALL, PREF4ALL]]));
   QUESTIONS[4].verite.push(...fill([['Tu effaces à vie l un des deux : {x} ou {y} ? Choisis ton sacrifice.', WORST, WORST]]));
+  /* --- v22 · INFERNO : la salve la plus chaude (vérités X + actions médias) --- */
+  QUESTIONS[4].verite.push(...[
+    "Décris ton dernier rapport en commençant par la fin. Chaque détail.",
+    "Ce que tu préfères faire avec ta bouche ? Sois précis, le groupe écoute.",
+    "Ta poitrine (ou ton torse) : décris-les comme si on ne les avait jamais vues.",
+    "Combien de fois par semaine tu te touches ? Le vrai chiffre.",
+    "Ce que tu penses quand tu te touches ? Scène complète.",
+    "Ta position anale préférée... ou celle qui t'intimide le plus ? Assume.",
+    "Le truc le plus sale que tu aies jamais fait dans un lit (ou ailleurs) ?",
+    "Décris ton-orgasme : ce que ton corps fait exactement. Sans gêne.",
+    "Tu as 30 secondes pour décrire comment tu aimes être touché(e), zone par zone.",
+    "Ta plus longue session ? Durée exacte et ce qui l'a rendue interminable.",
+    "Le plan où tu as été le/la plus cochonne/coquin de ta vie ? Raconte tout.",
+    "Ce que tu porterais si tu voulais qu'on te saute dessus ce soir ?",
+    "Ta plus grosse envie sexuelle du moment ? Le groupe note la précision.",
+    "Combien de personnes ici tu imaginerais bien au lit ? Prénoms obligatoires.",
+    "Le dernier porno qui t'a marqué(e) ? Décris la scène exacte.",
+    "Ce que tu ferais si la personne à ta droite te tirait dans une chambre maintenant ?",
+    "Ta pratique sexuelle préférée que tu n'avoues jamais au premier rendez-vous ?",
+    "Décris ton corps du point de vue de quelqu'un qui te désire. Entièrement.",
+    "Le bruit que tu fais juste avant de jouir ? Imitation demandée.",
+    "Ta plus folle envie jamais réalisée... et celle qui attend encore ?",
+    "Ce qui t'a fait jouir le plus vite de ta vie ? Raconte la scène.",
+    "Les sextos les plus osés de ta galerie : lis le pire à voix haute.",
+    "Ta plus longue abstinence ? Ce que tu as fait pour tenir ?",
+    "Décris la taille et la forme de ce que tu caches dans ton slip/calcul. Sans détour.",
+    "Le plan le plus cochon que tu REFUSES encore de faire ? Pourquoi ?",
+    "Ton rapport préféré : rapide et sauvage ou long et lent ? Détaille le déroulé.",
+    "Ce que tu as déjà avalé / fait avaler ? Le groupe veut la vérité.",
+    "Ta pire envie au travail ou en cours ? Ce que tu aurais fait ?",
+    "Combien d'orgasmes en une nuit, ton record ? Qui a survécu ?",
+    "Le fantasme le plus pervers que tu oses dire à voix haute MAINTENANT ?",
+    "Où et comment touches-tu ton corps quand tu es seul(e), ce soir si on te laisse 10 minutes ?",
+    "La personne d'ici avec qui tu irais le plus loin ce soir ? Et jusqu'où ?",
+    "Ta technique orale fétiche ? Décris le mouvement comme un professeur.",
+    "Ce que tu ferais avec deux personnes d'ici en même temps ? Réalise le scénario.",
+    "Ton plus grand secret sexual : celui que tu n'as JAMAIS dit, même ivre mort ?",
+    "Décris le dernier fois où tu as perdu le contrôle de ton corps. Qui ? Où ? Comment ?",
+    "Le plan le plus torride que tu as imaginé en regardant quelqu'un D'ICI ?",
+    "Ce que tes mains font quand la lumière s'éteint ? Les deux premières minutes ?",
+    "Ta réaction exacte si tu recevais un nude de la personne que tu crains le plus d'ici ?",
+    "L'endroit de ton corps le plus sensible que tu montres rarement ? Décris-le.",
+    "Ta plus grosse frustration sexuelle jamais vécue ? Le flop raconté en détail.",
+    "Ce que tu changes de toi au lit si tu étais 100% sans interdit ?",
+    "Ta position pour t'enduire de crème après la douche ? Scène complète.",
+    "Le plan dont tu te souviendras sur ton lit de mort ? Minute par minute.",
+    "Combien de nudes tu as envoyés ce mois-ci ? À qui (initiales) ?",
+    "Le bruit d'oreiller que tu fais quand tu penses très fort à quelqu'un ?",
+    "Ton rituel complet avant de coucher avec quelqu'un pour la première fois ?",
+    "Ce que tu as déjà fait dans l'eau qui aurait choqué ta mère ?",
+    "Ta plus grosse défaite de contrôle face à un baisé dans le cou ?",
+    "Décris exactement ce que tu portes en ce moment, dedans ET dehors."
+  ]);
+  const MEDX = ["une photo de toi sans le haut", "une photo de toi sans le bas", "un nude complet (visage caché autorisé)", "une photo de tes fesses", "une photo de ta poitrine (ou torse nus)", "un vocal de 15 s où tu gémis", "une vidéo de 10 s où tu danses très sensuellement", "un strip vidéo de 15 s", "une photo prise à l'instant en sous-vêtements", "un selfie bouche ouverte langue sortie", "un vocal où tu souffles un prénom de façon torride", "une photo « au lit » prise maintenant", "une vidéo de 10 s qui mime ton fantasme", "un vocal de 20 s qui raconte ce que tu ferais cette nuit"];
+  const MEDY = ["au joueur de ton choix (message privé 📎)", "au joueur que le groupe désigne (privé 📎)", "au joueur le plus timide d'ici (privé 📎)", "à ton crush du salon (privé 📎)", "au dernier joueur qui a répondu (privé 📎)", "en public ici, sans honte 😈"];
+  QUESTIONS[4].action.push(...fill([["Envoie {x} {y}, maintenant.", MEDX, MEDY]]));
+  QUESTIONS[4].action.push(...[
+    "Filme-toi en train de te caresser par-dessus les vêtements : 15 secondes, sans couper.",
+    "Enlève TOUT sauf tes sous-vêtements et reste ainsi jusqu'à la fin de ce tour.",
+    "Imite un orgasme complet : voix, respiration, tremblements. Le groupe note sur 10.",
+    "Décris à voix haute ce que tu ferais à la première personne qui osera te regarder en ce moment.",
+    "Fais un show complet avec le seul objet le plus proche de toi. 20 secondes. Imagination au max.",
+    "Envoie la photo la plus osée de ta galerie, celle que tu montres jamais. Maintenant.",
+    "Gémis le prénom du joueur de ton choix pendant 10 secondes. Crédibilité obligatoire.",
+    "Assis(e) face cam : décris ce que tes mains feraient si elles étaient les siennes. Démontre.",
+    "Fais 10 secondes de plan serré sur ta bouche : ce que cette bouche sait faire, raconte-le.",
+    "Laisse le groupe décider quel vêtement tu enlèves. Pas de négociation.",
+    "Envoie un selfie pris SOUS ta chemise (sans visage). Preuve à l'appui.",
+    "Décris ton corps comme un commentaire de film X : chaque zone, chaque courbe.",
+    "Mime l'acte que tu maîtrises le mieux. Le groupe devine. S'il devine pas, tu recommences.",
+    "Choisis deux joueurs : dis-leur séparément ce que vous feriez à trois, scène complète.",
+    "Envoie un vocal de toi qui t'excites progressivement pendant 20 secondes. Fin libre.",
+    "Montre ta main en train de parcourir le chemin que tu aimes recevoir. Lentement.",
+    "Écris ici, publiquement, la chose que tu voudrais que l'on te fasse ce soir. Sans métaphore.",
+    "Enlève un vêtement à chaque réaction 😏 que le groupe t'envoie pendant 30 secondes.",
+    "Fais ton meilleur regard d'ange déchu à la cam pendant que tu racontes ton pire désir.",
+    "Envoie au groupe la photo de l'endroit où tu aimerais être embrassé(e) ce soir (_indices visuels).",
+    "Te voilà l'esclave du groupe pendant 2 minutes : tu réponds OUI à tout gage chaud.",
+    "Fais lire à voix haute tes derniers messages privés par le joueur de ton choix. Sans éditer.",
+    "Imite exactement comment tu bouges au moment le plus intense. 15 secondes, cam ouverte.",
+    "Décris la scène parfaite qui finirait au lit avec quelqu'un d'ici. Tu es le réalisateur : casting immédiat."
+  ]);
+
   let tot = 0;
   Object.keys(QUESTIONS).forEach(d => { tot += QUESTIONS[d].verite.length + QUESTIONS[d].action.length; });
   console.log('📚 Banque de questions :', tot, '— 🌶️ niv.4 :', QUESTIONS[4].verite.length + QUESTIONS[4].action.length);
@@ -740,7 +823,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 21 · SIMPLE POUR LES DÉBUTANTS</div>
+    <div class="ver">VERSION 22 · INFERNO</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1371,7 +1454,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v21</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v22</div>
 </body>
 </html>`;
 
@@ -1577,6 +1660,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v21 — démarré sur le port', process.env.PORT || 3000);
-  console.log('🚫 IA désactivée (v21) — questions 100% banque locale XXL');
+  console.log('🌶️ Vérité ou Action v22 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🚫 IA désactivée (v22) — questions 100% banque locale XXL');
 });
