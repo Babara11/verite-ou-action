@@ -209,6 +209,7 @@ function serialize(room) {
       question: room.turn.question || null,
       deadline: room.turn.deadline || 0,
       answered: !!room.turn.answered,
+      ai: !!room.turn.ai,
     } : null,
     maxPlayers: MAX_PLAYERS,
     maxMisses: MAX_MISSES,
@@ -266,7 +267,9 @@ function beginChoosing(room) {
   broadcast(room);
 }
 
-async function aiQuestion(diff, type, name, gender) {
+let LAST_AI_ROOM = null;   // pour afficher l'erreur IA à l'admin du salon en cours
+async function aiQuestion(room, diff, type, name, gender) {
+  LAST_AI_ROOM = room;
   if (!process.env.GROQ_API_KEY) return null;
   const niveau = { 1: 'légère et fun', 2: 'coquine', 3: 'très directe, sans filtre', 4: 'TRÈS CHAUD : explicite, intime, sans AUCUN filtre (adultes consentants)' }[diff] || 'coquine';
   const prompt = 'Tu es le meneur d\u2019un jeu de Vérité ou Action pour adultes consentants (18+). Génère UNE seule '
@@ -280,11 +283,21 @@ async function aiQuestion(diff, type, name, gender) {
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 250, response_format: { type: 'json_object' } }),
       signal: AbortSignal.timeout(9000),
     });
-    if (!r.ok) { console.log('⚠️ IA erreur HTTP', r.status); return null; }
+    if (!r.ok) {
+      let detail = '';
+      try { detail = (await r.text()).slice(0, 120); } catch (e) {}
+      console.log('⚠️ IA erreur HTTP', r.status, detail);
+      if (LAST_AI_ROOM) sys(LAST_AI_ROOM, '⚠️ IA (HTTP ' + r.status + ') : ' + (r.status === 401 ? 'clé INVALIDE — recrée-la sur console.groq.com' : r.status === 429 ? 'limite atteinte, réessaie dans quelques minutes' : 'erreur Groq'));
+      return null;
+    }
     const j = await r.json();
     const q = JSON.parse(j.choices[0].message.content).question;
     return (typeof q === 'string' && q.length > 8 && q.length < 500) ? q.trim() : null;
-  } catch (e) { console.log('⚠️ IA indisponible :', e.message); return null; }
+  } catch (e) {
+    console.log('⚠️ IA indisponible :', e.message);
+    if (LAST_AI_ROOM) sys(LAST_AI_ROOM, '⚠️ IA injoignable : ' + e.message);
+    return null;
+  }
 }
 
 function beginAnswering(room, type) {
@@ -293,7 +306,7 @@ function beginAnswering(room, type) {
   room.phase = 'answering';
   room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false, ai: false };
   // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
-  aiQuestion(room.difficulty, type, t.name, t.gender).then(aiq => {
+  aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
     if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
       room.turn.question = aiq; room.turn.ai = true;
       broadcast(room);
@@ -481,7 +494,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 11 · MOBILE PARFAIT</div>
+    <div class="ver">VERSION 13 · LE SCRIPT EST VIVANT</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -625,6 +638,18 @@ function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 
+/* Détecteur d'erreur visible : tout plantage du script s'affiche à l'écran */
+window.onerror = function (msg, src2, line) {
+  var b = document.getElementById('jserror');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'jserror';
+    b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b00;color:#fff;font:12px monospace;padding:8px;z-index:9999';
+    (document.body || document.documentElement).appendChild(b);
+  }
+  b.textContent = '⚠️ ERREUR SCRIPT (dis-le au dev) : ' + msg + ' @ligne ' + line;
+};
+
 /* ---------- Mobile : bloquer le zoom à 2 doigts ---------- */
 document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
 document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
@@ -648,7 +673,7 @@ function tap(el, fn) {
 /* ---------- Navigateur intégré (Instagram...) : alerte + copie du lien ---------- */
 (function () {
   var UA = navigator.userAgent || '';
-  var INAPP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\/|LinkedIn|Pinterest|WebView/i.test(UA) || (/iPhone|iPad|iPod/.test(UA) && !/Safari\//.test(UA));
+  var INAPP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line|LinkedIn|Pinterest|WebView/i.test(UA) || (/iPhone|iPad|iPod/.test(UA) && !/Safari/.test(UA));
   if (!INAPP) return;
   var ov = document.getElementById('inapp');
   if (!ov) return;
@@ -854,7 +879,7 @@ setInterval(function () {
 var COLORS = ['#ff2e63', '#7c4dff', '#21c07a', '#ff9f1c', '#3d8bff', '#ff5ca8'];
 function drawWheel() {
   var cv = $('#wheel'); if (!cv) return;
-  var ctx = cv.getContext('2d');
+  var ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
   var W = cv.width, cx = W / 2, R = W / 2 - 12;
   ctx.clearRect(0, 0, W, W);
   var ps = S ? S.players : [];
@@ -1055,6 +1080,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v13</div>
 </body>
 </html>`;
 
@@ -1247,6 +1273,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v11 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v13 — démarré sur le port', process.env.PORT || 3000);
   console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
 });
