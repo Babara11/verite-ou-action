@@ -310,6 +310,7 @@ async function aiQuestion(room, diff, type, name, gender) {
     + 'Thème imposé : ' + angle + '. '
     + 'RÈGLES ABSOLUES : français SIMPLE de tous les jours, UNE seule phrase COURTE (15 à 25 mots maximum), directe, brûlante, va droit au but, ose tout — le contexte est 18+. '
     + (eviter.length ? 'Ne ressemble à AUCUNE de ces questions déjà posées : "' + eviter.join('" / "') + '". ' : '')
+    + 'La question COMMENCE par le prénom du joueur suivi d\u2019une virgule (exemple : « ' + name + ', … ») pour l\u2019impliquer personnellement. '
     + 'Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
   const tentes = [];
   for (let essai = 0; essai < 3; essai++) {
@@ -358,12 +359,13 @@ async function aiQuestion(room, diff, type, name, gender) {
 
 function beginAnswering(room, type) {
   const t = room.players.get(room.turn.targetId);
-  const q = drawQuestion(room, type);
+  const q = withName(drawQuestion(room, type), t.name);
   room.phase = 'answering';
   room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false, ai: false };
   room.lastQs = ((room.lastQs || []).concat(q)).slice(-4);
   // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
   aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
+    if (aiq) aiq = withName(aiq, t.name);
     if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
       room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false; room.aiErr = null;
       room.lastQs = ((room.lastQs || []).concat(aiq)).slice(-4);
@@ -391,7 +393,9 @@ function beginReacting(room) {
   room.turn.answered = true;
   room.phase = 'reacting';
   room.turn.deadline = Date.now() + REACT_TIME;
-  room.timer = setTimeout(() => nextTurn(room), REACT_TIME);
+  const tp = room.players.get(room.turn.targetId);
+  // v18 : c'est au répondeur de lancer la roue. Un bot s'exécute vite ; un humain a REACT_TIME en secours.
+  room.timer = setTimeout(() => nextTurn(room), tp && tp.isBot ? 2200 + Math.random() * 2000 : REACT_TIME);
   broadcast(room);
 }
 
@@ -522,6 +526,15 @@ function removePlayer(room, id, kicked) {
   console.log('📚 Banque de questions :', tot, '— 🌶️ niv.4 :', QUESTIONS[4].verite.length + QUESTIONS[4].action.length);
 })();
 
+/* v18 : la question s'adresse au joueur par son prénom : "Modou, ..." */
+function withName(q, name) {
+  q = String(q || '').trim();
+  if (!q || !name || q.indexOf(name) === 0) return q;
+  const c = q.slice(0, 1);
+  if (/[A-Z\u00C0-\u00DD]/.test(c)) q = c.toLowerCase() + q.slice(1);
+  return name + ', ' + q;
+}
+
 function drawQuestion(room, type) {
   const bank = QUESTIONS[room.difficulty][type];
   const prefix = room.difficulty + ':' + type + ':';
@@ -645,7 +658,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 17 · BANQUE XXL + IA CHAUDE</div>
+    <div class="ver">VERSION 18 · À TOI DE LANCER</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -726,6 +739,10 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
       </div>
       <p class="hint" style="text-align:center;margin:4px 0">— ou réponds en vocal —</p>
       <button id="mic" class="btn">🎤 Appuie pour enregistrer (30s max)</button>
+    </div>
+    <div id="spinrow" hidden style="text-align:center;margin:10px 0">
+      <button id="btn-spin" class="btn" style="font-size:17px;padding:14px 22px">🎯 LANCER LA ROUE !</button>
+      <p class="hint" style="margin-top:5px">C'est toi qui lance… sinon elle se lance toute seule 😉</p>
     </div>
     <div class="panel" style="padding:0">
       <div class="feedhead">
@@ -990,7 +1007,7 @@ function renderGame() {
   if (S.phase === 'spinning') ph.textContent = '🎡 La roue tourne...';
   else if (S.phase === 'choosing') ph.textContent = isMe ? 'À TOI ! Choisis vite (60s) :' : '🎯 ' + (tp ? tp.name : '?') + ' choisit...';
   else if (S.phase === 'answering') ph.textContent = isMe ? '💬 Réponds sans filtrer (2 min) !' : '💬 ' + (tp ? tp.name : '?') + ' répond...';
-  else if (S.phase === 'reacting') ph.textContent = '🔥 Réactions ! Tour suivant imminent...';
+  else if (S.phase === 'reacting') ph.textContent = isMe ? '🔥 Réactions… puis 🎯 À TOI de lancer la roue !' : '🔥 Réactions… 🎯 ' + (tp ? tp.name : '?') + ' va lancer la roue';
   else ph.textContent = '⏸️ En pause...';
   var showT = t && t.deadline && PH[S.phase];
   $('#timetrack').hidden = !showT;
@@ -1002,6 +1019,7 @@ function renderGame() {
     $('#qtext').textContent = t.question;
   }
   $('#answer').hidden = !(S.phase === 'answering' && isMe && !t.answered);
+  $('#spinrow').hidden = !(S.phase === 'reacting' && isMe);
   var g = $('#game-grid'); g.innerHTML = '';
   for (var k = 0; k < S.maxPlayers; k++) {
     var p = S.players[k];
@@ -1079,6 +1097,7 @@ drawWheel();
 /* ---------- Choix / réponses / chat ---------- */
 $('#btn-verite').onclick = function () { socket.emit('turn:choose', { type: 'verite' }); };
 $('#btn-action').onclick = function () { socket.emit('turn:choose', { type: 'action' }); };
+tap($('#btn-spin'), function () { socket.emit('turn:spin'); });
 function sendAnswer() { var v = $('#in-answer').value.trim(); if (!v) return; $('#in-answer').value = ''; socket.emit('chat:text', { text: v }); }
 $('#btn-send').onclick = sendAnswer;
 $('#in-answer').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendAnswer(); });
@@ -1231,7 +1250,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v17</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v18</div>
 </body>
 </html>`;
 
@@ -1365,6 +1384,19 @@ io.on('connection', (socket) => {
     const item = { kind, mid: p.id, name: p.name, b64, ts: Date.now() };
     io.to(socket.id).emit('media:new', item);
     if (Array.isArray(to)) to.forEach(id => { if (room.players.has(id) && id !== socket.id) io.to(id).emit('media:new', item); });
+    // v18 : une photo/vidéo envoyée pendant TON tour compte comme ta réponse
+    if (room.phase === 'answering' && room.turn && room.turn.targetId === socket.id && !room.turn.answered) {
+      sys(room, (kind === 'photo' ? '📷 ' : '🎬 ') + p.name + ' a répondu en ' + (kind === 'photo' ? 'photo' : 'vidéo') + ' !');
+      beginReacting(room);
+    }
+  });
+
+  socket.on('turn:spin', () => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const p = room.players.get(socket.id); if (!p) return;
+    if (room.phase !== 'reacting' || !room.turn || room.turn.targetId !== socket.id) return;
+    sys(room, '🎯 ' + p.name + ' lance la roue !');
+    nextTurn(room);
   });
 
   socket.on('reaction', ({ emoji } = {}) => {
@@ -1424,7 +1456,7 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v17 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v18 — démarré sur le port', process.env.PORT || 3000);
   console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
   if (process.env.GROQ_API_KEY) {
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
