@@ -112,6 +112,37 @@ const QUESTIONS = {
   }
 };
 
+QUESTIONS[4] = {
+  verite: [
+    "C'est quoi ton fantasme le plus torride que tu n'as JAMAIS raconté ? Détails obligatoires.",
+    "Décris la dernière fois que tu as fait l'amour : quand, où, comment. Sans sauter une étape.",
+    "Quelle est la position que tu pratiques le plus ? Et celle que tu n'oses pas tester ?",
+    "Le nombre EXACT de personnes avec qui tu as couché. Le vrai chiffre.",
+    "Raconte ton meilleur coup de ta vie. Qu'est-ce qui l'a rendu inoubliable ?",
+    "As-tu déjà couché avec quelqu'un d'ici ? Qui ? (les autres ferment les yeux 😈)",
+    "C'est quoi le truc le plus pervers que quelqu'un t'ait demandé... et que tu as accepté ?",
+    "Combien de temps tiens-tu ? Le groupe veut une estimation honnête 😏",
+    "Bande son ou silence total au lit ? Décris ce que tu aimes entendre.",
+    "Ton pire échec au lit ? Ramolissage, finition express... Raconte le drame.",
+    "Où est l'endroit LE PLUS risqué où tu as fait l'amour ? Presque surpris(e) ?",
+    "Si tu devais coucher avec 2 personnes de cette partie, lesquelles ? 😈"
+  ],
+  action: [
+    "Envoie un vocal de 20 secondes décrivant ce que tu ferais ce soir à la personne de ton choix ici. Sans censure.",
+    "Décris en détail, à voix haute, ton dernier rapport. Le groupe juge les détails.",
+    "Fais un strip COMPLET, cam ouverte. 30 secondes chrono 🔥",
+    "Gémis de la manière la plus réaliste possible pendant 10 secondes. Le groupe note /10.",
+    "Envoie à ton crush le message le plus osé que tu oses écrire. Copie-le ici, preuve à l'appui.",
+    "Mime ta position préférée pendant 15 secondes. Le groupe doit la deviner exactement.",
+    "Raconte ta meilleure nuit en imitant les bruits et les gestes. Théâtre intégral.",
+    "Le groupe choisit un joueur : déclare-lui ce que tu lui ferais si vous étiez seuls ce soir. 30 secondes, sans détour.",
+    "Envoie une photo de toi en sous-vêtements (ou ce que tu portes) au joueur de ton choix.",
+    "Fais 20 pompes en sous-vêtements, cam ouverte. Le groupe compte et applaudit.",
+    "Simule un préliminaire complet... sur un coussin. 1 minute, cam ouverte 😈",
+    "Laisse le groupe écrire UN mot que tu dois gémir de la façon la plus convaincante. 3 fois."
+  ]
+};
+
 /* ---------------- État des salons ---------------- */
 const rooms = new Map();
 const socketRoom = new Map();
@@ -125,10 +156,10 @@ const genCode = () => {
 const cleanName = (n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, 14) || 'Joueur';
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-function createRoom(socket, name, difficulty) {
+function createRoom(socket, name, difficulty, gender) {
   const room = {
     code: genCode(),
-    difficulty: [1, 2, 3].includes(+difficulty) ? +difficulty : 2,
+    difficulty: [1, 2, 3, 4].includes(+difficulty) ? +difficulty : 2,
     inviteAt: Date.now(),
     lastEmptyAt: 0,
     players: new Map(),
@@ -141,16 +172,16 @@ function createRoom(socket, name, difficulty) {
     feed: [],
   };
   rooms.set(room.code, room);
-  addPlayer(room, socket, name, true);
+  addPlayer(room, socket, name, true, gender);
   return room;
 }
 
-function addPlayer(room, socket, name, isAdmin) {
-  const p = { id: socket.id, name, isAdmin: !!isAdmin, isBot: false, misses: 0, connected: true, joinedAt: Date.now() };
+function addPlayer(room, socket, name, isAdmin, gender) {
+  const p = { id: socket.id, name, isAdmin: !!isAdmin, isBot: false, gender: gender === 'femme' ? 'femme' : 'homme', misses: 0, connected: true, joinedAt: Date.now() };
   room.players.set(socket.id, p);
   socket.join(room.code);
   socketRoom.set(socket.id, room);
-  sys(room, name + ' a rejoint le salon 👋');
+  sys(room, name + ' (' + p.gender + ') a rejoint le salon 👋');
   return p;
 }
 
@@ -158,7 +189,7 @@ function addBot(room) {
   const used = new Set([...room.players.values()].map(p => p.name));
   const NAMES = ['Bot Awa', 'Bot Modou', 'Bot Fatou', 'Bot Serigne', 'Bot Amy'];
   const nm = NAMES.find(n => !used.has(n)) || ('Bot ' + Math.floor(Math.random() * 90 + 10));
-  const bot = { id: 'bot_' + Date.now().toString(36) + Math.floor(Math.random() * 99), name: nm, isAdmin: false, isBot: true, misses: 0, connected: true, joinedAt: Date.now() };
+  const bot = { id: 'bot_' + Date.now().toString(36) + Math.floor(Math.random() * 99), name: nm, isAdmin: false, isBot: true, gender: Math.random() < 0.5 ? 'homme' : 'femme', misses: 0, connected: true, joinedAt: Date.now() };
   room.players.set(bot.id, bot);
   sys(room, nm + ' (robot) a rejoint 🤖');
   return bot;
@@ -171,7 +202,7 @@ function serialize(room) {
     difficulty: room.difficulty,
     inviteExpiresAt: room.inviteAt + INVITE_TTL,
     players: [...room.players.values()].sort((a, b) => a.joinedAt - b.joinedAt)
-      .map(p => ({ id: p.id, name: p.name, isAdmin: p.isAdmin, isBot: p.isBot, misses: p.misses, connected: p.connected })),
+      .map(p => ({ id: p.id, name: p.name, isAdmin: p.isAdmin, isBot: p.isBot, gender: p.gender || 'homme', misses: p.misses, connected: p.connected })),
     turn: room.turn ? {
       targetId: room.turn.targetId,
       type: room.turn.type || null,
@@ -235,11 +266,39 @@ function beginChoosing(room) {
   broadcast(room);
 }
 
+async function aiQuestion(diff, type, name, gender) {
+  if (!process.env.GROQ_API_KEY) return null;
+  const niveau = { 1: 'légère et fun', 2: 'coquine', 3: 'très directe, sans filtre', 4: 'TRÈS CHAUD : explicite, intime, sans AUCUN filtre (adultes consentants)' }[diff] || 'coquine';
+  const prompt = 'Tu es le meneur d\u2019un jeu de Vérité ou Action pour adultes consentants (18+). Génère UNE seule '
+    + (type === 'verite' ? 'question de VÉRITÉ (intime, à répondre honnêtement)' : 'ACTION (défi osé à accomplir immédiatement devant le groupe)')
+    + ' pour le joueur "' + name + '" (' + (gender === 'femme' ? 'une femme' : 'un homme') + '). Niveau demandé : ' + niveau
+    + '. En français. Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 250, response_format: { type: 'json_object' } }),
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const q = JSON.parse(j.choices[0].message.content).question;
+    return (typeof q === 'string' && q.length > 8 && q.length < 500) ? q.trim() : null;
+  } catch (e) { return null; }
+}
+
 function beginAnswering(room, type) {
   const t = room.players.get(room.turn.targetId);
   const q = drawQuestion(room, type);
   room.phase = 'answering';
-  room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false };
+  room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false, ai: false };
+  // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
+  aiQuestion(room.difficulty, type, t.name, t.gender).then(aiq => {
+    if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
+      room.turn.question = aiq; room.turn.ai = true;
+      broadcast(room);
+    }
+  });
   if (t.isBot) {
     room.timer = setTimeout(() => {
       const ANS = ['Oula... je refuse de répondre 😂', 'Ma réponse est OUI. Point.', 'Franchement ? C\u2019est compliqué 😬', 'C\u2019est vrai mais chut 🤫', 'Je le savais, et j\u2019ai honte 😅', 'Demandez au prochain !'];
@@ -404,6 +463,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 @keyframes rise { to { transform: translateY(-105vh) rotate(25deg); opacity: .1; } }
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--hot); color: #fff; font-weight: 700; padding: 12px 18px; border-radius: 14px; z-index: 99; font-size: 14px; max-width: 92vw; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 [hidden] { display: none !important; }
+.diffrow .btn { padding: 11px 4px; font-size: 13.5px; }
 </style>
 </head>
 <body>
@@ -413,8 +473,12 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 8 · ULTRA SIMPLE</div>
+    <div class="ver">VERSION 9 · GENRE + MODE CHAUD + IA</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
+    <div class="diffrow" id="genderrow">
+      <button class="btn sel" data-g="homme">👨 Homme</button>
+      <button class="btn" data-g="femme">👩 Femme</button>
+    </div>
     <input type="text" id="in-name" class="input" maxlength="14" placeholder="Ton pseudo...">
     <button id="btn-create" class="btn big primary">🎓 CRÉER UN SALON</button>
     <div class="divider">— ou —</div>
@@ -451,7 +515,8 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
       <div class="diffrow" id="diffrow">
         <button class="btn" data-d="1">😄 Facile</button>
         <button class="btn" data-d="2">😏 Moyen</button>
-        <button class="btn" data-d="3">🔥 Difficile</button>
+        <button class="btn" data-d="3">🔥 Direct</button>
+        <button class="btn" data-d="4">🌶️ CHAUD</button>
       </div>
     </div>
     <button id="btn-addbot" class="btn" hidden>🤖 Ajouter un robot (test solo)</button>
@@ -557,13 +622,27 @@ socket.on('wheel', function (d) { spin(d.targetId, d.duration || 4000); });
 socket.on('reaction', function (d) { float(d.emoji); });
 socket.on('room:closed', function () { del('voa_code'); S = null; show('s-end'); });
 
+/* ---------- Accueil : genre ---------- */
+var myGender = read('voa_gender') || 'homme';
+(function () {
+  var gr = document.querySelectorAll('#genderrow .btn');
+  for (var i = 0; i < gr.length; i++) {
+    gr[i].classList.toggle('sel', gr[i].dataset.g === myGender);
+    gr[i].onclick = function () {
+      myGender = this.dataset.g; save('voa_gender', myGender);
+      for (var j = 0; j < gr.length; j++) gr[j].classList.toggle('sel', gr[j].dataset.g === myGender);
+    };
+  }
+})();
+var gIcon = function (p) { return (p && p.gender === 'femme') ? '\uD83D\uDC69 ' : '\uD83D\uDC68 '; };
+
 /* ---------- Accueil ---------- */
 $('#btn-create').onclick = function () {
   if (!$('#age18').checked) return toast('Confirme d\u2019abord que tu as 18 ans 🍾');
   var n = $('#in-name').value.trim();
   if (!n) { $('#in-name').focus(); return toast('Choisis ton pseudo 😄'); }
   myName = n; save('voa_name', n);
-  socket.emit('room:create', { name: n, difficulty: 2 });
+  socket.emit('room:create', { name: n, difficulty: 2, gender: myGender });
 };
 $('#btn-join').onclick = function () {
   if (!$('#age18').checked) return toast('Confirme d\u2019abord que tu as 18 ans 🍾');
@@ -571,7 +650,7 @@ $('#btn-join').onclick = function () {
   if (!n) { $('#in-name').focus(); return toast('Choisis ton pseudo 😄'); }
   if (c.length < 4) { $('#in-code').focus(); return toast('Tape le code à 4 lettres 🔤'); }
   myName = n; myPending = c; save('voa_name', n);
-  socket.emit('room:join', { name: n, code: c });
+  socket.emit('room:join', { name: n, code: c, gender: myGender });
 };
 $('#btn-wait-cancel').onclick = function () { myPending = null; del('voa_code'); show('s-home'); };
 $('#btn-home').onclick = function () { location.reload(); };
@@ -606,7 +685,7 @@ function renderLobby() {
     cell.innerHTML = '<span class="num">Case ' + (k + 1) + '</span><span class="dot' + (p && (p.connected || p.isBot) ? ' on' : '') + '"></span>';
     if (p) {
       var nm = document.createElement('span');
-      nm.textContent = (p.isAdmin ? '👑 ' : '') + (p.isBot ? '🤖 ' : '') + p.name;
+      nm.textContent = (p.isAdmin ? '👑 ' : '') + (p.isBot ? '🤖 ' : gIcon(p)) + p.name;
       cell.appendChild(nm);
       if (adm && p.id !== socket.id && !p.isBot) {
         var x = document.createElement('button'); x.className = 'x'; x.textContent = '✖';
@@ -671,7 +750,7 @@ function renderGame() {
   var showQ = !!(t && t.question && (S.phase === 'answering' || S.phase === 'reacting'));
   $('#qcard').hidden = !showQ;
   if (showQ) {
-    $('#qtype').textContent = t.type === 'verite' ? 'VÉRITÉ 💬 — réponds sans mentir' : 'ACTION 🎯 — à toi d\u2019oser';
+    $('#qtype').textContent = (t.ai ? '🤖 IA · ' : '') + (t.type === 'verite' ? 'VÉRITÉ 💬 — réponds sans mentir' : 'ACTION 🎯 — à toi d\u2019oser');
     $('#qtext').textContent = t.question;
   }
   $('#answer').hidden = !(S.phase === 'answering' && isMe && !t.answered);
@@ -683,7 +762,7 @@ function renderGame() {
     cell.innerHTML = '<span class="num">Case ' + (k + 1) + '</span><span class="dot' + (p && (p.connected || p.isBot) ? ' on' : '') + '"></span>';
     if (p) {
       var nm = document.createElement('span');
-      nm.textContent = (p.isAdmin ? '👑 ' : '') + (p.isBot ? '🤖 ' : '') + p.name + (p.misses ? ' ⚠️' + p.misses : '');
+      nm.textContent = (p.isAdmin ? '👑 ' : '') + (p.isBot ? '🤖 ' : gIcon(p)) + p.name + (p.misses ? ' ⚠️' + p.misses : '');
       cell.appendChild(nm);
     } else {
       var lib = document.createElement('span'); lib.textContent = '➕'; cell.appendChild(lib);
@@ -851,7 +930,7 @@ io.on('connection', (socket) => {
   socket.on('room:create', (data = {}) => {
     if (socketRoom.has(socket.id)) return;
     if (rooms.size >= MAX_ROOMS) return socket.emit('error:msg', { key: 'fullsessions' });
-    const room = createRoom(socket, cleanName(data.name), data.difficulty);
+    const room = createRoom(socket, cleanName(data.name), data.difficulty, data.gender);
     socket.emit('joined', { code: room.code });
     broadcast(room);
   });
@@ -878,7 +957,7 @@ io.on('connection', (socket) => {
     if (room.players.size >= MAX_PLAYERS) return socket.emit('error:msg', { key: 'full' });
     if (Date.now() >= room.inviteAt + INVITE_TTL) return socket.emit('error:msg', { key: 'expired' });
     room.pending = room.pending.filter(r => r.name.toLowerCase() !== name.toLowerCase());
-    room.pending.push({ id: socket.id, name, at: Date.now() });
+    room.pending.push({ id: socket.id, name, gender: data.gender === 'femme' ? 'femme' : 'homme', at: Date.now() });
     room.pending = room.pending.filter(r => Date.now() - r.at < 60000).slice(-4);
     socket.join(room.code);
     socket.emit('join:waiting', { code: room.code });
@@ -895,7 +974,7 @@ io.on('connection', (socket) => {
     const sock = io.sockets.sockets.get(id);
     if (!ok || !sock) { io.to(id).emit('join:rejected'); return; }
     if (room.players.size >= MAX_PLAYERS) { io.to(id).emit('error:msg', { key: 'full' }); return; }
-    addPlayer(room, sock, req.name, false);
+    addPlayer(room, sock, req.name, false, req.gender);
     sock.emit('joined', { code: room.code });
     io.to(id).emit('feed:init', { feed: room.feed.slice(-40) });
     broadcast(room);
@@ -904,7 +983,7 @@ io.on('connection', (socket) => {
   socket.on('difficulty', ({ d } = {}) => {
     const room = socketRoom.get(socket.id); if (!room) return;
     const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
-    if ([1, 2, 3].includes(+d)) { room.difficulty = +d; sys(room, 'Difficulté : ' + ['Facile 😄', 'Moyen 😏', 'Difficile 🔥'][+d - 1]); broadcast(room); }
+    if ([1, 2, 3, 4].includes(+d)) { room.difficulty = +d; sys(room, 'Difficulté : ' + ['Facile 😄', 'Moyen 😏', 'Direct 🔥', 'CHAUD 🌶️'][+d - 1]); broadcast(room); }
   });
 
   socket.on('invite:refresh', () => {
@@ -1011,5 +1090,5 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v8 (ULTRA SIMPLE) — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v9 — démarré sur le port', process.env.PORT || 3000);
 });
