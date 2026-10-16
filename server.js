@@ -268,6 +268,34 @@ function beginChoosing(room) {
 }
 
 let LAST_AI_ROOM = null;   // pour afficher l'erreur IA à l'admin du salon en cours
+let AI_MODELS = null, AI_MODELS_AT = 0;
+
+/* Trouve automatiquement un modèle IA disponible chez Groq (cache 10 min) */
+async function pickModel() {
+  if (AI_MODELS && AI_MODELS.length && Date.now() - AI_MODELS_AT < 600000) return AI_MODELS[0];
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (r.ok) {
+      const ids = ((await r.json()).data || []).map(m => m.id);
+      const pref = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'];
+      const list = pref.filter(p => ids.indexOf(p) >= 0);
+      AI_MODELS = list.length ? list : ids.slice(0, 3);
+      AI_MODELS_AT = Date.now();
+      if (AI_MODELS.length) { console.log('🤖 IA modèle sélectionné :', AI_MODELS[0]); return AI_MODELS[0]; }
+    } else { console.log('⚠️ IA liste modèles HTTP', r.status); }
+  } catch (e) { console.log('⚠️ IA liste modèles injoignable :', e.message); }
+  return 'openai/gpt-oss-120b';
+}
+
+/* Alerte IA : une seule fois par salon jusqu'au prochain succès (pas de spam) */
+function aiWarn(room, msg) {
+  console.log('⚠️ IA :', msg);
+  if (room && !room.aiWarned) { sys(room, '⚠️ ' + msg); room.aiWarned = true; }
+}
+
 async function aiQuestion(room, diff, type, name, gender) {
   LAST_AI_ROOM = room;
   if (!process.env.GROQ_API_KEY) return null;
@@ -276,28 +304,32 @@ async function aiQuestion(room, diff, type, name, gender) {
     + (type === 'verite' ? 'question de VÉRITÉ (intime, à répondre honnêtement)' : 'ACTION (défi osé à accomplir immédiatement devant le groupe)')
     + ' pour le joueur "' + name + '" (' + (gender === 'femme' ? 'une femme' : 'un homme') + '). Niveau demandé : ' + niveau
     + '. En français. Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
-  try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 250, response_format: { type: 'json_object' } }),
-      signal: AbortSignal.timeout(9000),
-    });
-    if (!r.ok) {
-      let detail = '';
-      try { detail = (await r.text()).slice(0, 120); } catch (e) {}
-      console.log('⚠️ IA erreur HTTP', r.status, detail);
-      if (LAST_AI_ROOM) sys(LAST_AI_ROOM, '⚠️ IA (HTTP ' + r.status + ') : ' + (r.status === 401 ? 'clé INVALIDE — recrée-la sur console.groq.com' : r.status === 429 ? 'limite atteinte, réessaie dans quelques minutes' : 'erreur Groq'));
+  for (let essai = 0; essai < 2; essai++) {
+    try {
+      const model = await pickModel();
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], temperature: 1, max_tokens: 250, response_format: { type: 'json_object' } }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (r.status === 404) { AI_MODELS = null; AI_MODELS_AT = 0; continue; }  // modèle retiré → on en choisit un autre
+      if (!r.ok) {
+        let detail = '';
+        try { detail = (await r.text()).slice(0, 120); } catch (e) {}
+        aiWarn(room, 'IA (HTTP ' + r.status + ') : ' + (r.status === 401 ? 'clé INVALIDE — recrée-la sur console.groq.com' : r.status === 429 ? 'limite atteinte, réessaie dans quelques minutes' : 'erreur Groq ' + detail));
+        return null;
+      }
+      const j = await r.json();
+      const q = JSON.parse(j.choices[0].message.content).question;
+      if (typeof q === 'string' && q.length > 8 && q.length < 500) { if (room) room.aiWarned = false; return q.trim(); }
+      return null;
+    } catch (e) {
+      aiWarn(room, 'IA injoignable : ' + e.message);
       return null;
     }
-    const j = await r.json();
-    const q = JSON.parse(j.choices[0].message.content).question;
-    return (typeof q === 'string' && q.length > 8 && q.length < 500) ? q.trim() : null;
-  } catch (e) {
-    console.log('⚠️ IA indisponible :', e.message);
-    if (LAST_AI_ROOM) sys(LAST_AI_ROOM, '⚠️ IA injoignable : ' + e.message);
-    return null;
   }
+  return null;
 }
 
 function beginAnswering(room, type) {
@@ -308,7 +340,7 @@ function beginAnswering(room, type) {
   // L'IA (si clé configurée) remplace la question par une question générée, personnalisée
   aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
     if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
-      room.turn.question = aiq; room.turn.ai = true;
+      room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false;
       broadcast(room);
     }
   });
@@ -494,7 +526,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 13 · LE SCRIPT EST VIVANT</div>
+    <div class="ver">VERSION 14 · IA ANTI-404</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1080,7 +1112,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v13</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v14</div>
 </body>
 </html>`;
 
@@ -1273,6 +1305,6 @@ setInterval(() => {
 }, 10000);
 
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v13 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v14 — démarré sur le port', process.env.PORT || 3000);
   console.log('🤖 IA Groq :', process.env.GROQ_API_KEY ? 'CLÉ TROUVÉE ✅' : 'ABSENTE ❌ (ajoute GROQ_API_KEY dans Environment)');
 });
