@@ -19,9 +19,11 @@ const MAX_MISSES = 2;                 // 2 non-réponses = exclu
 const AUDIO_MAX = 1600000;
 
 /* ---------------- Questions (français, 3 niveaux) ---------------- */
+const RAW_QS = new Set();   /* questions perso wolof : mot pour mot */
 const QUESTIONS = {
   1: {
     verite: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 1 😄 FACILE — Vérité) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "C'est quoi ton plus mauvais plan séduction ? Raconte le crash.",
       "As-tu déjà envoyé un message coquin à la mauvaise personne ?",
       "Qui a été la dernière personne que tu as embrassée ?",
@@ -36,6 +38,7 @@ const QUESTIONS = {
       "As-tu déjà déclaré tes feelings par texto, par peur de le faire en vrai ?"
     ],
     action: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 1 😄 FACILE — Action) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "Fais le compliment le plus chaud possible à la personne à ta gauche.",
       "Envoie 🔥 au 5e contact de ta liste de discussions récentes.",
       "Danse 30 secondes sur ton titre préféré.",
@@ -52,6 +55,7 @@ const QUESTIONS = {
   },
   2: {
     verite: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 2 😏 MOYEN — Vérité) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "Décris ton premier baiser : âge, lieu, ambiance. Détails exigés.",
       "As-tu déjà couché avec quelqu'un dès le premier soir ?",
       "C'est quoi le fantasme que tu n'as jamais raconté à personne ?",
@@ -66,6 +70,7 @@ const QUESTIONS = {
       "Ton pire baiser de ta vie ? Raconte la catastrophe."
     ],
     action: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 2 😏 MOYEN — Action) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "Fais un strip-tease d'UN seul vêtement. Les chaussettes ne comptent pas 😄",
       "Envoie un message très chaud à ton crush.",
       "Raconte ta dernière nuit chaude comme un conte de fées.",
@@ -82,6 +87,7 @@ const QUESTIONS = {
   },
   3: {
     verite: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 3 🔥 DIRECT — Vérité) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "C'est la chose la plus folle que tu aies faite au lit ? Sans filtre.",
       "As-tu déjà eu une aventure avec quelqu'un déjà en couple ?",
       "Ta position préférée ? Le groupe exige des détails.",
@@ -96,6 +102,7 @@ const QUESTIONS = {
       "Le plus bizarre qu'on t'ait demandé au lit... et tu as dit oui ?"
     ],
     action: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 3 🔥 DIRECT — Action) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
       "Envoie un audio « chaud » de 15 secondes à la personne que le groupe choisit.",
       "Envoie le sexto que tu n'as jamais osé écrire. Copie-le ici.",
       "Décris ce que tu ferais à la personne de ton choix ici, si elle était là 😈",
@@ -114,6 +121,7 @@ const QUESTIONS = {
 
 QUESTIONS[4] = {
   verite: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 4 🌶️ CHAUD — Vérité) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
     "C'est quoi ton fantasme le plus torride que tu n'as JAMAIS raconté ? Détails obligatoires.",
     "Décris la dernière fois que tu as fait l'amour : quand, où, comment. Sans sauter une étape.",
     "Quelle est la position que tu pratiques le plus ? Et celle que tu n'oses pas tester ?",
@@ -128,6 +136,7 @@ QUESTIONS[4] = {
     "Si tu devais coucher avec 2 personnes de cette partie, lesquelles ? 😈"
   ],
   action: [
+      /* ⭐⭐⭐ TES QUESTIONS PERSO ICI (NIVEAU 4 🌶️ CHAUD — Action (gages)) : une question par ligne, entourée de " avec une virgule à la fin ⭐⭐⭐ */
     "Envoie un vocal de 20 secondes décrivant ce que tu ferais ce soir à la personne de ton choix ici. Sans censure.",
     "Décris en détail, à voix haute, ton dernier rapport. Le groupe juge les détails.",
     "Fais un strip COMPLET, cam ouverte. 30 secondes chrono 🔥",
@@ -774,6 +783,38 @@ function removePlayer(room, id, kicked) {
     "Garde tes mains sur tes fesses jusqu à la fin du tour. Démonstration incluse."
   ]);
 
+  /* --- v23.1 · QUESTIONS PERSO EN WOLOF (liste de l'admin) : intégrées mot pour mot --- */
+  (function () {
+    const WV = [
+      "meuss ga rayy sa leuff bamou toyy ?",
+      "est ce que meuss ga yernou nitt mouy sangou ?",
+      "est ce que meuss ga sekh koy ?",
+      "est ce que meuss ga lal leufou jigenn bamouy sitt ?",
+      "lan mola geun saff si goor ?",
+      "lan mola geun nekh si goor ?",
+      "ban partie mola geun nekh si jigenne ?",
+      "tay sounou weeton lomay deff ?",
+      "meuss ga khalatt man ak yow nou dajer si been neek ?",
+      "beugg ga guiss loula jakhal si man ?",
+      "sagne gama rayy si souff ?",
+      "sagne gama mathial ?",
+      "lo beugg nou def man ak yaw ?"
+    ];
+    const WA = [
+      "raayal sa silipp bamou toy ga envoyer",
+      "photol ma sa ablay ndiaye ga send",
+      "yokhoul melni kounouy mathial ablaye ndiaye",
+      "yokhoul melni kounouy mathial anna ndiaye",
+      "photol se ween envoyer ko koula neekh si groupe bi",
+      "defal bruit ak ablaye ndiaye",
+      "lo beug ma defal lako",
+      "dama beugg ga mathial ma",
+      "dama beugg guiss sa lolou"
+    ];
+    WV.forEach(q => { RAW_QS.add(q); QUESTIONS[4].verite.push(q); });
+    WA.forEach(q => { RAW_QS.add(q); QUESTIONS[4].action.push(q); });
+  })();
+
   let tot = 0;
   Object.keys(QUESTIONS).forEach(d => { tot += QUESTIONS[d].verite.length + QUESTIONS[d].action.length; });
   console.log('📚 Banque de questions :', tot, '— 🌶️ niv.4 :', QUESTIONS[4].verite.length + QUESTIONS[4].action.length);
@@ -782,7 +823,9 @@ function removePlayer(room, id, kicked) {
 /* v18 : la question s'adresse au joueur par son prénom : "Modou, ..." */
 function withName(q, name) {
   q = String(q || '').trim();
-  if (!q || !name || q.indexOf(name) === 0) return q;
+  if (!q) return q;
+  if (RAW_QS.has(q)) return q;
+  if (!name || q.indexOf(name) === 0) return q;
   const c = q.slice(0, 1);
   if (/[A-Z\u00C0-\u00DD]/.test(c)) q = c.toLowerCase() + q.slice(1);
   return name + ', ' + q;
@@ -916,7 +959,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 23 · SANS DÉTOUR</div>
+    <div class="ver">VERSION 23 · SANS DÉTOUR + WOLOF</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1755,4 +1798,5 @@ setInterval(() => {
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
   console.log('🌶️ Vérité ou Action v23 — démarré sur le port', process.env.PORT || 3000);
   console.log('🚫 IA désactivée (v23) — questions 100% banque locale XXL');
+  console.log('🇸🇳 Questions wolof perso : 22 intégrées au niveau 🌶️');
 });
