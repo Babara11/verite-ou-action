@@ -20,6 +20,7 @@ const AUDIO_MAX = 1600000;
 
 /* ---------------- Questions (français, 3 niveaux) ---------------- */
 const RAW_QS = new Set();   /* questions perso wolof : mot pour mot */
+const WOLOF = { verite: [], action: [] };   /* tirage rythmé : ~1 wolof toutes les 5 questions en 🌶️ */
 const QUESTIONS = {
   1: {
     verite: [
@@ -811,9 +812,105 @@ function removePlayer(room, id, kicked) {
       "dama beugg ga mathial ma",
       "dama beugg guiss sa lolou"
     ];
-    WV.forEach(q => { RAW_QS.add(q); QUESTIONS[4].verite.push(q); });
-    WA.forEach(q => { RAW_QS.add(q); QUESTIONS[4].action.push(q); });
+    WV.forEach(q => { RAW_QS.add(q); QUESTIONS[4].verite.push(q); WOLOF.verite.push(q); });
+    WA.forEach(q => { RAW_QS.add(q); QUESTIONS[4].action.push(q); WOLOF.action.push(q); });
   })();
+
+  /* --- v24 · NOUVELLES QUESTIONS CHAUDES DU NET : variété totale (jouets, sextos, jalousie, rêves, lieux…) --- */
+  QUESTIONS[4].verite.push(...[
+    "As-tu déjà utilisé un jouet intime avec quelqu un ? Raconte la scène complète.",
+    "Quel est le bruit de ton/ta partenaire qui te fait le plus craquer ?",
+    "Quelle odeur te met instantanément d humeur ? Raconte la dernière fois.",
+    "As-tu déjà couché avec quelqu un pour de l argent ou un cadeau ? Assume.",
+    "Ta jalousie au lit : qu est-ce qui te rend furieux/furieuse ? Sois vrai(e).",
+    "As-tu déjà eu un rêve érotique avec quelqu un de CE salon ? Raconte.",
+    "Ta scène de film X préférée ? Décris l image exacte qui te revient.",
+    "As-tu déjà testé la glace ou la plume au lit ? Verdict honnête.",
+    "As-tu déjà fait l amour dans un avion ou un train ? Le club très fermé ?",
+    "Tes préliminaires en vrai : combien de minutes ? Chronomètre mental.",
+    "La chose que ton/ta partenaire fait sans le savoir et qui te rend fou/folle ?",
+    "Sextoys : lequel tu utilises ou rêves d utiliser ? Détails techniques.",
+    "As-tu déjà filmé un rapport (avec accord) ? Ça existe encore aujourd hui ?",
+    "Ton plus grand regret : celui/celle que tu as laissé(e) filer sans rien tenter ?",
+    "As-tu déjà été attiré(e) par le/la copain/copine d un proche ? Ça s est su ?",
+    "Ta réaction VRAIE si un(e) joueur d ici t envoyait un nude ce soir ?",
+    "As-tu déjà laissé quelqu un regarder ? Ou regardé ? Raconte la scène.",
+    "Ton rapport le plus rapide de ta vie ? Chronomètre honnête.",
+    "Ta plus grande faiblesse physique : nuque, oreilles, dos ? L endroit exact.",
+    "As-tu déjà pleuré après un rapport ? Le vrai pourquoi.",
+    "Quelle chanson t a déjà mis d humeur en pleine soirée ? Dernière occurrence ?",
+    "As-tu déjà réalisé un fantasme pendant que quelqu un conduisait ?",
+    "Le miroir pendant l action : oui, non, pourquoi ? Sois graphique.",
+    "Quelle est la promesse la plus folle que tu as faite au lit ? Tenue ou pas ?",
+    "As-tu déjà dormi collé(e) à quelqu un sans rien faire alors que ça brûlait ? Comment tu as tenu ?",
+    "Ton record de temps SANS y penser ? (personne ne te croit)",
+    "Qu est-ce qui te fait dire oui plus vite : un regard, un mot, ou une main ?",
+    "Ta première réaction quand on t embrasse le bas du dos ? Décris la montée.",
+    "As-tu déjà été surpris(e) en train de te toucher ? Scène complète.",
+    "Ton moment préféré : l avant, le pendant, ou l après ? Pourquoi ?",
+    "As-tu déjà enchaîné deux personnes le même week-end ? Énergie légendaire ?",
+    "Quel est le compliment au lit que tu voudrais entendre tout le temps ?",
+    "Ta plus grosse dépense cochonne (hôtel, lingerie, jouet) ? Le ticket de caisse.",
+    "As-tu déjà flirté avec deux personnes du même groupe d amis ? Lesquelles ?",
+    "Ton sexto le plus osé envoyé ? Résume-le ici, censure interdite.",
+    "Qu est-ce que tu regardes EN PREMIER chez quelqu un nu ? Sois précis.",
+    "As-tu déjà simulé pour raccourcir ? Ou pour ne pas blesser ? Raconte.",
+    "La position où tu tiens le plus longtemps ? Et celle où tu lâches en 2 minutes ?",
+    "As-tu déjà testé les menottes ou le bandage des yeux ? Ce que ça a changé ?",
+    "Ton fantasme qui restera à jamais non réalisé ? Et pourquoi ?",
+    "Ta plus grande phobie au lit ? (panne, rire mal placé, fatigue soudaine…)",
+    "As-tu déjà enchaîné une soirée et un plan sans dormir ? Raconte la nuit blanche.",
+    "Le dernier truc coquin que tu as cherché sur ton téléphone ? L historique parle.",
+    "As-tu déjà pensé à quelqu un d ici pendant un moment intime ? Initiales acceptées.",
+    "Ta plus longue abstinence ? Ce que la libération a donné ?",
+    "Quel est ton pire achat coquin ? Description complète demandée.",
+    "As-tu déjà eu un plan qui a fini en relation sérieuse ? Retournement complet ?",
+    "Ton premier réflexe quand quelqu un glisse une main dans ton dos ?",
+    "As-tu déjà dit je t aime au moment le moins approprié ? Le moment exact.",
+    "La phrase chuchotée qui te fait fondre à 100 % ? Dis-la au groupe."
+  ]);
+  QUESTIONS[4].action.push(...[
+    "Ferme les yeux : le groupe pose ta main sur un objet, devine-le avec tes doigts… version sensuelle.",
+    "Raconte ton dernier rêve chaud comme un conte pour enfants. Le groupe va halluciner.",
+    "Fais deviner ta position préférée par un mime de 10 secondes, sans les mains.",
+    "Prends la pose exacte de ta meilleure photo chaude. 10 secondes, immobile.",
+    "Fais un vocal en chuchotant comme si quelqu un dormait juste à côté de toi.",
+    "Laisse le groupe choisir un mot : dis-le de la manière la plus sensuelle possible.",
+    "Écris un sexto de 3 lignes ici, en public. Le joueur à droite note sur 10.",
+    "Mime un déshabillage qui tourne mal. Comédie autorisée, sensualité exigée.",
+    "Regarde quelqu un d ici dans les yeux et dis-lui exactement ce que tu ressens maintenant. 30 s.",
+    "Change de place avec le joueur de ton choix et garde son attitude pendant un tour.",
+    "Mime ce que tu ferais si tu étais seul(e) ce soir. 20 secondes, sans gêne.",
+    "Chuchote ton fantasme du moment comme si le groupe était ton amoureux secret.",
+    "Fais un commentaire sportif de ton dernier rapport. Score final autorisé.",
+    "Danse très lentement avec un coussin pendant que le groupe choisit la musique. 30 s.",
+    "Montre le dernier objet que tu utiliserais pour un massage improvisé. Démontre.",
+    "Fais deviner une zone de ton corps en la touchant. 3 essais pour le groupe.",
+    "Imite ta réaction si quelqu un te surprenait dans un moment intime. Théâtre complet.",
+    "Fais un vocal voix d ange qui devient voix du diable en 15 secondes.",
+    "Décris ton rituel de séduction en 4 étapes, comme une recette de cuisine.",
+    "Mime un baiser lent avec la main de quelqu un d ici (avec son accord 😏).",
+    "Fais l annonce officielle de ton mariage imaginaire avec un(e) joueur d ici. Discours.",
+    "Mime ta scène de film romantique préférée avec un objet de ta pièce.",
+    "Fais 10 secondes de regard de feu à la cam. Si tu ris, tu recommences.",
+    "Change de pseudo pendant un tour : Sexy_ + le prénom choisi par le groupe.",
+    "Envoie un vocal de 10 s de rire qui finit en gémis. Le groupe juge la transition.",
+    "Fais une pub de 20 s pour vendre ta nuit libre ce soir. Meilleure offre gagne.",
+    "Écris ici ton menu du soir : entrée, plat, dessert… version intime.",
+    "Écris la déclaration que tu n as jamais osé envoyer. Publie-la ici. Sans nom.",
+    "Fais ta meilleure imitation de quelqu un qui simule. Oscar du jury.",
+    "Fais deviner ton fantasme avec 3 mots-indices. Le groupe a 2 essais.",
+    "Montre comment tu embrasserais quelqu un de plus grand que toi. Support : coussin.",
+    "Imite ta démarche après une nuit parfaite. 15 s de satisfaction visible.",
+    "Fais la promo d un faux parfum nommé « Toi ce soir ». Slogan obligatoire.",
+    "Danse pour le joueur de ton choix comme si c était votre premier rendez-vous. 30 s.",
+    "Mime la plus mauvaise tentative de séduction de ta vie. Le groupe note l échec.",
+    "Envoie ta routine de réveil version torride : 15 s de cam matinale.",
+    "Fais 20 secondes de yoga érotique inventé. Postures notées par le groupe.",
+    "Raconte ta première fois en 5 mots exactement. Le groupe devine le reste.",
+    "Lèche ton doigt, touche ta lèvre en regardant la cam. 10 secondes. Silence total.",
+    "Mime ta plus grosse honte intime. Le groupe devine l histoire complète."
+  ]);
 
   let tot = 0;
   Object.keys(QUESTIONS).forEach(d => { tot += QUESTIONS[d].verite.length + QUESTIONS[d].action.length; });
@@ -832,6 +929,18 @@ function withName(q, name) {
 }
 
 function drawQuestion(room, type) {
+  /* v24 : en niveau 🌶️, environ 1 question wolof toutes les 4-6 tirages */
+  if (room.difficulty === 4 && WOLOF[type] && WOLOF[type].length) {
+    if (room.wolofGap === undefined) room.wolofGap = 4 + Math.floor(Math.random() * 3);
+    if (room.wolofGap <= 0) {
+      const pool = WOLOF[type];
+      const i = room.wolofIdx || 0;
+      room.wolofIdx = (i + 1) % pool.length;
+      room.wolofGap = 4 + Math.floor(Math.random() * 3);
+      return pool[i];
+    }
+    room.wolofGap--;
+  }
   const bank = QUESTIONS[room.difficulty][type];
   const prefix = room.difficulty + ':' + type + ':';
   let idxs = bank.map((_, i) => i).filter(i => !room.used.has(prefix + i));
@@ -959,7 +1068,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 23 · SANS DÉTOUR + WOLOF</div>
+    <div class="ver">VERSION 24 · VARIÉTÉ + WOLOF RYTHMÉ</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1590,7 +1699,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v23</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v24</div>
 </body>
 </html>`;
 
@@ -1795,8 +1904,9 @@ setInterval(() => {
   }
 }, 10000);
 
+try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v23 — démarré sur le port', process.env.PORT || 3000);
-  console.log('🚫 IA désactivée (v23) — questions 100% banque locale XXL');
+  console.log('🌶️ Vérité ou Action v24 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🚫 IA désactivée (v24) — questions 100% banque locale XXL');
   console.log('🇸🇳 Questions wolof perso : 22 intégrées au niveau 🌶️');
 });
