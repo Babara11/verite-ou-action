@@ -1093,13 +1093,20 @@ body[data-theme="sunset"] { --bg:#0d0a1a; --bg2:#2a1538; --card:#211230; --line:
 body[data-theme="honey"] { --bg:#171006; --bg2:#33240f; --card:#29200f; --line:#4d3c1c; --mut:#d8c39a; --hot:#ffb020; --hot2:#ffe45c; }
 body[data-theme="velvet"] { --bg:#180a12; --bg2:#3a1327; --card:#2c1020; --line:#55223c; --mut:#d8a8c0; --hot:#ff2e63; --hot2:#ff6a8e; }
 body[data-theme="ocean"] { --bg:#04121c; --bg2:#0a2436; --card:#0a1e2e; --line:#16445e; --mut:#9ac4d8; --hot:#19c8c8; --hot2:#5cffb0; }
+.gearbtn { width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg2); font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform .3s ease, border-color .2s ease; }
+.gearbtn:hover { transform: rotate(45deg); border-color: var(--hot); }
+.setpanel { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin: 10px 0; }
+.setpanel.open { display: block; animation: slidein .25s ease; }
+.setpanel h3 { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
+.setpanel .setrow { display: flex; gap: 11px; justify-content: center; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+.setpanel .setlbl { font-size: 12px; color: var(--mut); font-weight: 800; text-align: left; margin-top: 8px; }
 .swatch { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--line); background: var(--bg2); font-size: 17px; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; transition: transform .15s ease, border-color .2s ease; }
 .swatch.sel { border-color: var(--hot); transform: scale(1.18); }
 @keyframes slidein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg) 60%); color: var(--txt); min-height: 100vh; overflow-x: hidden; padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); scroll-behavior: smooth; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg) 60%); color: var(--txt); min-height: 100vh; overflow-x: hidden; padding-top: env(safe-area-inset-top, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); scroll-behavior: smooth; }
 .screen { display: none; min-height: 100vh; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 .screen.active { display: block; animation: slidein .3s ease; }
-.card { max-width: 440px; margin: 5vh auto 20px; padding: 30px 22px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 15px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.card { max-width: 440px; margin: calc(4vh + env(safe-area-inset-top, 0px)) auto 20px; padding: 30px 22px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 15px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
 .logo { font-size: 60px; }
 h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--hot), var(--hot2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .badge18 { align-self: center; background: var(--hot); color: #fff; font-weight: 900; padding: 3px 14px; border-radius: 999px; font-size: 14px; }
@@ -1119,9 +1126,9 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .btn.danger { border-color: var(--hot); color: var(--hot); }
 .divider { color: var(--mut); font-size: 13px; }
 .hint { color: var(--mut); font-size: 12.5px; line-height: 1.5; }
-.topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; position: sticky; top: 0; z-index: 5; background: rgba(11,11,20,.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); position: sticky; top: 0; z-index: 5; background: var(--bg); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .code-big { font-size: 20px; font-weight: 900; letter-spacing: 6px; color: var(--hot2); background: var(--card); border: 1px solid var(--line); padding: 6px 14px; border-radius: 12px; cursor: pointer; }
-.wrap { max-width: 560px; margin: 14px auto; padding: 0 15px; display: flex; flex-direction: column; gap: 15px; }
+.wrap { max-width: 560px; margin: 14px auto; margin-top: calc(14px + env(safe-area-inset-top, 0px)); padding: 0 15px; display: flex; flex-direction: column; gap: 15px; }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 17px 16px; }
 .panel h3 { font-size: 15px; margin-bottom: 10px; }
 .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
@@ -1195,7 +1202,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 28 · THÈMES + DESIGN CHALEUREUX</div>
+    <div class="ver">VERSION 28 · PARAMÈTRES ⚙️ + THÈMES</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1219,6 +1226,11 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <button id="btn-join" class="btn big">🚪 REJOINDRE</button>
     <button id="btn-solo" class="btn big">🎲 HORS LIGNE (1 téléphone)</button>
     <p class="hint" style="margin-top:4px">📴 Sans connexion : le groupe joue sur un seul téléphone, on se le passe !</p>
+    <button id="btn-homeset" class="btn small" style="align-self:center;border-radius:999px">⚙️ Paramètres</button>
+    <div class="setpanel" id="setpanel-home" style="margin:0">
+      <div class="setlbl">🎨 Thème de mon téléphone (utilisé hors ligne) :</div>
+      <div class="setrow" id="hometheme"></div>
+    </div>
     <p class="hint">⚠️ Respect et consentement obligatoires.<br>Tout disparaît à la fin de la session. 🧹</p>
   </div>
 </section>
@@ -1253,7 +1265,6 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
         <button class="btn" data-d="3">🔥 Direct</button>
         <button class="btn" data-d="4">🌶️ CHAUD</button>
       </div>
-      <div id="themrow" style="display:flex;gap:11px;justify-content:center;margin-top:12px"></div>
     </div>
     <button id="btn-addbot" class="btn" hidden>🤖 Ajouter un robot (test solo)</button>
     <button id="btn-start" class="btn big primary">▶️ LANCER LA PARTIE</button>
@@ -1265,7 +1276,14 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
   <div class="topbar">
     <span class="code-big" id="g-code" title="Cliquer pour copier">----</span>
     <button id="btn-invite2" class="btn small wa">💬</button>
-    <button id="btn-stop" class="btn small danger" style="margin-left:auto" hidden>Terminer</button>
+    <button id="btn-settings" class="gearbtn" style="margin-left:auto" title="Paramètres">⚙️</button>
+    <button id="btn-stop" class="btn small danger" hidden>Terminer</button>
+  </div>
+  <div class="setpanel" id="setpanel-game">
+    <h3>⚙️ Paramètres</h3>
+    <div class="setlbl">🎨 Thème de l app (choisi par l admin, retenu hors ligne) :</div>
+    <div class="setrow" id="themrow"></div>
+    <p class="hint" id="setinfo" style="margin-top:8px"></p>
   </div>
   <div class="wrap">
     <div class="grid6" id="game-grid"></div>
@@ -1365,11 +1383,48 @@ function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 const THEMES_UI = [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊']];
+const THEME_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel', velvet: '🍷 Velours', ocean: '🌊 Océan' };
+function buildSwatches(boxId, isRoom) {
+  var box = document.getElementById(boxId); if (!box) return;
+  box.innerHTML = '';
+  THEMES_UI.forEach(function (th) {
+    var b = document.createElement('button');
+    b.className = 'swatch'; b.dataset.t = th[0]; b.textContent = th[1]; b.title = THEME_N[th[0]];
+    b.setAttribute('aria-label', THEME_N[th[0]]);
+    if (isRoom) {
+      b.style.display = isAdmin() ? '' : 'none';
+      tap(b, function () { socket.emit('theme', { t: th[0] }); });
+    } else {
+      tap(b, function () {
+        applyTheme(th[0]);
+        var pan = box.closest('.setpanel');
+        if (pan) pan.querySelectorAll('.swatch').forEach(function (x) { x.classList.toggle('sel', x === b); });
+      });
+    }
+    box.appendChild(b);
+  });
+  paintSwatches(boxId, isRoom);
+}
+function paintSwatches(boxId, isRoom) {
+  var cur = (isRoom && S && S.theme) ? S.theme : (function () { try { return localStorage.getItem('voa_theme') || 'grenade'; } catch (e) { return 'grenade'; } })();
+  var box = document.getElementById(boxId); if (!box) return;
+  box.querySelectorAll('.swatch').forEach(function (x) {
+    x.classList.toggle('sel', x.dataset.t === cur);
+    if (isRoom) x.style.display = isAdmin() ? '' : 'none';
+  });
+}
+function togglePanel(id) { var p = document.getElementById(id); if (p) p.classList.toggle('open'); }
+document.addEventListener('click', function (e) {
+  if (e.target.closest && e.target.closest('#btn-settings')) togglePanel('setpanel-game');
+  if (e.target.closest && e.target.closest('#btn-homeset')) togglePanel('setpanel-home');
+});
+$('#btn-homeset') && (function () {})();
 function applyTheme(t) {
   try { document.body.setAttribute('data-theme', t || 'grenade'); } catch (e) {}
   save('voa_theme', t || 'grenade');
 }
 (function () { var t = null; try { t = localStorage.getItem('voa_theme'); } catch (e) {} if (t) { try { document.body.setAttribute('data-theme', t); } catch (e) {} } })();
+document.addEventListener('DOMContentLoaded', function () { buildSwatches('hometheme', false); });
 try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
 
 /* Détecteur d'erreur visible : tout plantage du script s'affiche à l'écran */
@@ -1509,22 +1564,11 @@ function renderLobby() {
     dr[i].classList.toggle('sel', +dr[i].dataset.d === S.difficulty);
     dr[i].style.display = adm ? '' : 'none';
   }
-  var TR = $('#themrow');
-  if (TR && !TR.children.length) {
-    THEMES_UI.forEach(function (th) {
-      var b = document.createElement('button');
-      b.className = 'swatch'; b.dataset.t = th[0]; b.textContent = th[1]; b.title = th[0];
-      tap(b, function () { socket.emit('theme', { t: th[0] }); });
-      TR.appendChild(b);
-    });
-  }
-  if (TR) {
-    var tsw = TR.querySelectorAll('.swatch');
-    for (var ti = 0; ti < tsw.length; ti++) {
-      tsw[ti].classList.toggle('sel', tsw[ti].dataset.t === S.theme);
-      tsw[ti].style.display = adm ? '' : 'none';
-    }
-  }
+  var TR = document.getElementById('themrow');
+  if (TR && !TR.children.length) buildSwatches('themrow', true);
+  else if (TR) paintSwatches('themrow', true);
+  var SI = document.getElementById('setinfo');
+  if (SI) SI.textContent = isAdmin() ? 'Les joueurs verront ce thème, même hors ligne 📴' : 'Seul l admin change le thème — lui aussi sera retenu hors ligne 📴';
   var g = $('#lobby-grid'); g.innerHTML = '';
   for (var k = 0; k < S.maxPlayers; k++) {
     var p = S.players[k];
@@ -1866,15 +1910,18 @@ $('#mic').onclick = function () {
       <button class="btn sel" data-d="3">🔥</button>
       <button class="btn" data-d="4">🌶️</button>
     </div>
-    <div id="solotheme" style="display:flex;gap:11px;justify-content:center;margin-top:12px"></div>
-    <p class="hint" style="margin-top:4px">🎨 Le thème choisi reste pour le mode hors ligne</p>
     <button id="solo-start" class="btn big primary" style="margin-top:10px">▶️ COMMENCER</button>
     <button id="solo-back" class="btn small" style="margin-top:6px">← Retour</button>
   </div>
 </section>
 <section id="s-solo2" class="screen">
   <div class="wrap">
-    <div class="topbar"><span class="code-big">🎲 HORS LIGNE</span><button id="solo-quit" class="btn small danger" style="margin-left:auto">Quitter</button></div>
+    <div class="topbar"><span class="code-big">🎲 HORS LIGNE</span><button id="solo-settings" class="gearbtn" style="margin-left:auto" title="Paramètres">⚙️</button><button id="solo-quit" class="btn small danger">Quitter</button></div>
+    <div class="setpanel" id="setpanel-solo">
+      <h3>⚙️ Paramètres</h3>
+      <div class="setlbl">🎨 Thème (restera pour vos prochaines parties hors ligne) :</div>
+      <div class="setrow" id="solotheme"></div>
+    </div>
     <div id="solo-chips" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:4px 0"></div>
     <div id="phase">Prêt ?</div>
     <div class="wheelzone"><canvas id="swheel" width="330" height="330"></canvas><div class="pointer">▼</div></div>
@@ -1923,19 +1970,8 @@ $('#mic').onclick = function () {
       b.classList.add('sel');
     });
   });
-  (function () {
-    var box = document.getElementById('solotheme'); if (!box) return;
-    [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊']].forEach(function (th) {
-      var b = document.createElement('button');
-      b.className = 'swatch'; b.textContent = th[1]; b.title = th[0];
-      try { if ((localStorage.getItem('voa_theme') || 'grenade') === th[0]) b.classList.add('sel'); } catch (e) {}
-      b.addEventListener('click', function () {
-        try { document.body.setAttribute('data-theme', th[0]); localStorage.setItem('voa_theme', th[0]); } catch (e) {}
-        box.querySelectorAll('.swatch').forEach(function (x) { x.classList.toggle('sel', x === b); });
-      });
-      box.appendChild(b);
-    });
-  })();
+  buildSwatches('solotheme', false);
+  document.getElementById('solo-settings') && document.getElementById('solo-settings').addEventListener('click', function () { togglePanel('setpanel-solo'); });
 
   function soloQ(type) {
     var d = SO.diff;
@@ -2055,7 +2091,7 @@ $('#mic').onclick = function () {
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.2</div>
 </body>
 </html>`;
 
