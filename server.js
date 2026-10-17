@@ -1202,7 +1202,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 28 · PARAMÈTRES ⚙️ + THÈMES</div>
+    <div class="ver">VERSION 28 · PARAMÈTRES ⚙️ (corrigé)</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1961,7 +1961,7 @@ $('#mic').onclick = function () {
   document.addEventListener('click', function (e) {
     if (e.target.id === 'solo-add') { SO = SO || { names: [] }; var ins = document.querySelectorAll('#solo-rows input'); if (ins.length < 10) { SO.names = collect(); SO.names.push(''); renderRows(); } }
     if (e.target.id === 'solo-back') { show('s-home'); }
-    if (e.target.id === 'solo-quit') { if (confirm('Quitter la partie hors ligne ?')) { SO = null; show('s-home'); } }
+    if (e.target.id === 'solo-quit') { if (confirm('Quitter la partie hors ligne ?')) { SO = null; spinning = false; show('s-home'); } }
   });
   function collect() { var out = []; document.querySelectorAll('#solo-rows input').forEach(function (i) { out.push(i.value.trim()); }); return out; }
   document.querySelectorAll('#solodiff .btn').forEach(function (b) {
@@ -2014,6 +2014,7 @@ $('#mic').onclick = function () {
   }
 
   function chips() {
+    if (!SO) return;
     var c = $('#solo-chips'); c.innerHTML = '';
     SO.players.forEach(function (p, i) {
       var s = document.createElement('span');
@@ -2024,6 +2025,7 @@ $('#mic').onclick = function () {
   }
 
   function nextTurn(msg) {
+    if (!SO) return;
     SO.turn = (SO.turn + 1) % SO.players.length;
     SO.phase = 'spin';
     $('#solo-msg').textContent = msg || '';
@@ -2043,6 +2045,7 @@ $('#mic').onclick = function () {
 
   document.addEventListener('click', function (e) {
     if (e.target.id !== 'solo-gospin' || !SO || spinning) return;
+    if (SO.rot === undefined) SO.rot = 0;
     spinning = true;
     $('#solo-spinrow').style.display = 'none';
     $('#phase').textContent = '🎡 La roue tourne...';
@@ -2050,7 +2053,9 @@ $('#mic').onclick = function () {
     if (!ctx) { SO.turn = Math.floor(Math.random() * SO.players.length); toChoose(); spinning = false; return; }
     var v = 0.35 + Math.random() * 0.25;
     (function anim() {
-      SO.rot += v; v *= 0.981; drawW(SO.rot);
+      if (!SO) { spinning = false; return; }   // partie quittée pendant la rotation → stop net
+      SO.rot += v; v *= 0.981;
+      try { drawW(SO.rot); } catch (e2) { spinning = false; return; }
       if (v > 0.004) requestAnimationFrame(anim);
       else {
         var n = SO.players.length, seg = 2 * Math.PI / n;
@@ -2062,6 +2067,7 @@ $('#mic').onclick = function () {
   });
 
   function toChoose() {
+    if (!SO) return;
     SO.phase = 'choose';
     chips();
     $('#phase').textContent = SO.players[SO.turn].name + ', choisis !';
@@ -2077,6 +2083,7 @@ $('#mic').onclick = function () {
   }
   document.addEventListener('click', function (e) {
     if (!SO) return;
+    if (SO.rot === undefined) SO.rot = 0;
     if (e.target.id === 'solo-verite') pick('verite');
     if (e.target.id === 'solo-action') pick('action');
     if (e.target.id === 'solo-done' && SO.phase === 'question') nextTurn('🔥 ' + SO.players[SO.turn].name + ' a assuré ! Au suivant.');
@@ -2091,7 +2098,7 @@ $('#mic').onclick = function () {
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.2</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.3</div>
 </body>
 </html>`;
 
