@@ -1202,7 +1202,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 28 · PARAMÈTRES ⚙️ (corrigé)</div>
+    <div class="ver">VERSION 28 · ARRIVÉE DES JOUEURS RÉPARÉE</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1238,8 +1238,9 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 <section id="s-wait" class="screen">
   <div class="card">
     <div class="logo">⏳</div>
-    <h2>En attente de l'accord de l'admin...</h2>
+    <h2>⏳ En attente de l'admin...</h2>
     <p class="hint" id="wait-code"></p>
+    <p class="hint" style="margin-top:6px">Garde cette page ouverte : dès que l admin t accepte, tu entres dans le salon automatiquement 🎉</p>
     <button id="btn-wait-cancel" class="btn">Annuler</button>
   </div>
 </section>
@@ -1477,7 +1478,7 @@ function tap(el, fn) {
 /* ---------- Connexion + reprise auto ---------- */
 socket.on('connect', function () {
   var s = read('voa_code'), n = read('voa_name');
-  if (s && n && !S) { myName = n; socket.emit('room:join', { name: n, code: s }); }
+  if (s && n && !S) { myName = n; socket.emit('room:join', { name: n, code: s, gender: myGender }); }
 });
 socket.on('error:msg', function (d) {
   var M = { notfound: 'Salon introuvable ou fermé 😕', full: 'Salon complet 😵', expired: 'Lien expiré — demande un nouveau code ⏱️', fullsessions: 'Serveur plein, réessaie dans un instant 🙏' };
@@ -1496,6 +1497,7 @@ socket.on('feed:init', function (d) { d.feed.forEach(addMsg); drawFeed(); });
 socket.on('feed:new', function (it) { addMsg(it); drawFeed(); });
 
 socket.on('room:state', function (st) {
+  if (myPending) return;   /* en attente d approbation : on reste sur l écran d attente */
   S = st;
   if (st.theme) applyTheme(st.theme);
   save('voa_code', st.code); save('voa_name', myName);
@@ -1551,6 +1553,7 @@ var me = function () { if (!S) return null; for (var i = 0; i < S.players.length
 var isAdmin = function () { var m = me(); return !!(m && m.isAdmin); };
 
 function renderLobby() {
+  if (isAdmin() && !lastPending.length) socket.emit('pending:list');
   $('#lobby-code').textContent = S.code;
   $('#count').textContent = '(' + S.players.length + '/6)';
   var adm = isAdmin();
@@ -1606,6 +1609,7 @@ function drawPending() {
 }
 var lastPending = [];
 socket.on('join:pending', function (d) { lastPending = d.pending; drawPending(); });
+socket.on('join:expired', function () { toast('⌛ Demande expirée — demande au joueur de retaper le code', true); });
 
 $('#btn-addbot').onclick = function () { socket.emit('bot:add'); };
 $('#btn-start').onclick = function () { socket.emit('game:start'); };
@@ -2098,7 +2102,7 @@ $('#mic').onclick = function () {
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.3</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.4</div>
 </body>
 </html>`;
 
@@ -2189,17 +2193,24 @@ io.on('connection', (socket) => {
     if (Date.now() >= room.inviteAt + INVITE_TTL) return socket.emit('error:msg', { key: 'expired' });
     room.pending = room.pending.filter(r => r.name.toLowerCase() !== name.toLowerCase());
     room.pending.push({ id: socket.id, name, gender: data.gender === 'femme' ? 'femme' : 'homme', at: Date.now() });
-    room.pending = room.pending.filter(r => Date.now() - r.at < 60000).slice(-4);
+    room.pending = room.pending.filter(r => Date.now() - r.at < 300000).slice(-4);
     socket.join(room.code);
     socket.emit('join:waiting', { code: room.code });
     io.to(room.code).emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
+  });
+
+  socket.on('pending:list', () => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
+    room.pending = room.pending.filter(r => Date.now() - r.at < 300000 && io.sockets.sockets.get(r.id));
+    socket.emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
   });
 
   socket.on('join:respond', ({ id, ok } = {}) => {
     const room = socketRoom.get(socket.id); if (!room) return;
     const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
     const req = room.pending.find(r => r.id === id);
-    if (!req) return;
+    if (!req) { socket.emit('join:expired'); return; }
     room.pending = room.pending.filter(r => r.id !== id);
     io.to(room.code).emit('join:pending', { pending: room.pending.map(r => ({ id: r.id, name: r.name })) });
     const sock = io.sockets.sockets.get(id);
