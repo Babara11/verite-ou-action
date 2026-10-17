@@ -224,6 +224,7 @@ function serialize(room) {
     aiErr: room.aiErr || null,
     maxPlayers: MAX_PLAYERS,
     maxMisses: MAX_MISSES,
+    theme: room.theme || 'grenade',
   };
 }
 const broadcast = (room) => io.to(room.code).emit('room:state', serialize(room));
@@ -1087,11 +1088,18 @@ const HTML = `<!DOCTYPE html>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 html, body { overscroll-behavior: none; }
-:root { --bg:#0b0b14; --bg2:#14142a; --card:#1b1b36; --line:#2d2d55; --txt:#f2f2fa; --mut:#9a9ac0; --hot:#ff2e63; --hot2:#ff7a3d; --ok:#21c07a; --warn:#ffb020; }
-body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg) 60%); color: var(--txt); min-height: 100vh; }
-.screen { display: none; min-height: 100vh; padding-bottom: 24px; }
-.screen.active { display: block; }
-.card { max-width: 440px; margin: 5vh auto 20px; padding: 26px 20px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 13px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+:root { --bg:#160910; --bg2:#2a1220; --card:#1f0e19; --line:#3d2033; --txt:#fff5f7; --mut:#c9a3b5; --hot:#ff3b5c; --hot2:#ff8a3d; --ok:#2fd08a; --warn:#ffc046; }
+body[data-theme="sunset"] { --bg:#0d0a1a; --bg2:#2a1538; --card:#211230; --line:#422a5c; --mut:#c0a8d8; --hot:#ff8a3d; --hot2:#ff4da6; }
+body[data-theme="honey"] { --bg:#171006; --bg2:#33240f; --card:#29200f; --line:#4d3c1c; --mut:#d8c39a; --hot:#ffb020; --hot2:#ffe45c; }
+body[data-theme="velvet"] { --bg:#180a12; --bg2:#3a1327; --card:#2c1020; --line:#55223c; --mut:#d8a8c0; --hot:#ff2e63; --hot2:#ff6a8e; }
+body[data-theme="ocean"] { --bg:#04121c; --bg2:#0a2436; --card:#0a1e2e; --line:#16445e; --mut:#9ac4d8; --hot:#19c8c8; --hot2:#5cffb0; }
+.swatch { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--line); background: var(--bg2); font-size: 17px; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; transition: transform .15s ease, border-color .2s ease; }
+.swatch.sel { border-color: var(--hot); transform: scale(1.18); }
+@keyframes slidein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg) 60%); color: var(--txt); min-height: 100vh; overflow-x: hidden; padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); scroll-behavior: smooth; }
+.screen { display: none; min-height: 100vh; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+.screen.active { display: block; animation: slidein .3s ease; }
+.card { max-width: 440px; margin: 5vh auto 20px; padding: 30px 22px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 15px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
 .logo { font-size: 60px; }
 h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--hot), var(--hot2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .badge18 { align-self: center; background: var(--hot); color: #fff; font-weight: 900; padding: 3px 14px; border-radius: 999px; font-size: 14px; }
@@ -1101,7 +1109,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 16px; outline: none; text-align: center; }
 .input:focus { border-color: var(--hot); }
 .input.code { letter-spacing: 10px; font-size: 26px; font-weight: 800; text-transform: uppercase; }
-.btn { padding: 12px 18px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn { padding: 13px 18px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .12s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease; }
 .btn:active { transform: scale(.97); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 .btn.big { padding: 15px; font-size: 17px; }
@@ -1113,8 +1121,8 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .hint { color: var(--mut); font-size: 12.5px; line-height: 1.5; }
 .topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; position: sticky; top: 0; z-index: 5; background: rgba(11,11,20,.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .code-big { font-size: 20px; font-weight: 900; letter-spacing: 6px; color: var(--hot2); background: var(--card); border: 1px solid var(--line); padding: 6px 14px; border-radius: 12px; cursor: pointer; }
-.wrap { max-width: 560px; margin: 12px auto; padding: 0 12px; display: flex; flex-direction: column; gap: 12px; }
-.panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+.wrap { max-width: 560px; margin: 14px auto; padding: 0 15px; display: flex; flex-direction: column; gap: 15px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 17px 16px; }
 .panel h3 { font-size: 15px; margin-bottom: 10px; }
 .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 @media (min-width: 560px) { .grid6 { grid-template-columns: repeat(6, 1fr); } }
@@ -1187,7 +1195,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 27 · MODE HORS LIGNE</div>
+    <div class="ver">VERSION 28 · THÈMES + DESIGN CHALEUREUX</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1235,8 +1243,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="panel">
       <h3>👥 Les 6 cases <span class="hint" id="count"></span></h3>
       <div class="grid6" id="lobby-grid"></div>
-      <p class="hint" style="margin-top:6px">Il faut au moins 2 joueurs. 🤖 = robot de test qui joue tout seul.</p>
-      <p class="hint" style="margin-top:4px">🎡 La roue désigne → 💬 Vérité ou 🎯 Action → il répond (texte, vocal, photo, vidéo) → tout le monde peut relancer !</p>
+      <p class="hint" style="margin-top:6px">2 joueurs min · 🤖 robot de test · le guide est sur l accueil 🎲</p>
     </div>
     <div class="panel">
       <h3>🔥 Difficulté des questions</h3>
@@ -1246,6 +1253,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
         <button class="btn" data-d="3">🔥 Direct</button>
         <button class="btn" data-d="4">🌶️ CHAUD</button>
       </div>
+      <div id="themrow" style="display:flex;gap:11px;justify-content:center;margin-top:12px"></div>
     </div>
     <button id="btn-addbot" class="btn" hidden>🤖 Ajouter un robot (test solo)</button>
     <button id="btn-start" class="btn big primary">▶️ LANCER LA PARTIE</button>
@@ -1356,6 +1364,12 @@ function toast(m, long) { var t = $('#toast'); t.textContent = m; t.hidden = fal
 function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+const THEMES_UI = [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊']];
+function applyTheme(t) {
+  try { document.body.setAttribute('data-theme', t || 'grenade'); } catch (e) {}
+  save('voa_theme', t || 'grenade');
+}
+(function () { var t = null; try { t = localStorage.getItem('voa_theme'); } catch (e) {} if (t) { try { document.body.setAttribute('data-theme', t); } catch (e) {} } })();
 try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
 
 /* Détecteur d'erreur visible : tout plantage du script s'affiche à l'écran */
@@ -1428,6 +1442,7 @@ socket.on('feed:new', function (it) { addMsg(it); drawFeed(); });
 
 socket.on('room:state', function (st) {
   S = st;
+  if (st.theme) applyTheme(st.theme);
   save('voa_code', st.code); save('voa_name', myName);
   if (st.phase === 'lobby') { renderLobby(); show('s-lobby'); }
   else { renderGame(); show('s-game'); }
@@ -1493,6 +1508,22 @@ function renderLobby() {
   for (var i = 0; i < dr.length; i++) {
     dr[i].classList.toggle('sel', +dr[i].dataset.d === S.difficulty);
     dr[i].style.display = adm ? '' : 'none';
+  }
+  var TR = $('#themrow');
+  if (TR && !TR.children.length) {
+    THEMES_UI.forEach(function (th) {
+      var b = document.createElement('button');
+      b.className = 'swatch'; b.dataset.t = th[0]; b.textContent = th[1]; b.title = th[0];
+      tap(b, function () { socket.emit('theme', { t: th[0] }); });
+      TR.appendChild(b);
+    });
+  }
+  if (TR) {
+    var tsw = TR.querySelectorAll('.swatch');
+    for (var ti = 0; ti < tsw.length; ti++) {
+      tsw[ti].classList.toggle('sel', tsw[ti].dataset.t === S.theme);
+      tsw[ti].style.display = adm ? '' : 'none';
+    }
   }
   var g = $('#lobby-grid'); g.innerHTML = '';
   for (var k = 0; k < S.maxPlayers; k++) {
@@ -1835,6 +1866,8 @@ $('#mic').onclick = function () {
       <button class="btn sel" data-d="3">🔥</button>
       <button class="btn" data-d="4">🌶️</button>
     </div>
+    <div id="solotheme" style="display:flex;gap:11px;justify-content:center;margin-top:12px"></div>
+    <p class="hint" style="margin-top:4px">🎨 Le thème choisi reste pour le mode hors ligne</p>
     <button id="solo-start" class="btn big primary" style="margin-top:10px">▶️ COMMENCER</button>
     <button id="solo-back" class="btn small" style="margin-top:6px">← Retour</button>
   </div>
@@ -1890,6 +1923,19 @@ $('#mic').onclick = function () {
       b.classList.add('sel');
     });
   });
+  (function () {
+    var box = document.getElementById('solotheme'); if (!box) return;
+    [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊']].forEach(function (th) {
+      var b = document.createElement('button');
+      b.className = 'swatch'; b.textContent = th[1]; b.title = th[0];
+      try { if ((localStorage.getItem('voa_theme') || 'grenade') === th[0]) b.classList.add('sel'); } catch (e) {}
+      b.addEventListener('click', function () {
+        try { document.body.setAttribute('data-theme', th[0]); localStorage.setItem('voa_theme', th[0]); } catch (e) {}
+        box.querySelectorAll('.swatch').forEach(function (x) { x.classList.toggle('sel', x === b); });
+      });
+      box.appendChild(b);
+    });
+  })();
 
   function soloQ(type) {
     var d = SO.diff;
@@ -2009,7 +2055,7 @@ $('#mic').onclick = function () {
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v27</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28</div>
 </body>
 </html>`;
 
@@ -2119,6 +2165,17 @@ io.on('connection', (socket) => {
     addPlayer(room, sock, req.name, false, req.gender);
     sock.emit('joined', { code: room.code });
     io.to(id).emit('feed:init', { feed: room.feed.slice(-40) });
+    broadcast(room);
+  });
+
+  const THEMES = ['grenade', 'sunset', 'honey', 'velvet', 'ocean'];
+  const THEMES_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel doré', velvet: '🍷 Velours', ocean: '🌊 Océan' };
+  socket.on('theme', ({ t } = {}) => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
+    if (!THEMES.includes(t) || t === room.theme) return;
+    room.theme = t;
+    sys(room, '🎨 ' + me.name + ' change le thème : ' + THEMES_N[t] + ' (il restera pour le mode hors ligne !)');
     broadcast(room);
   });
 
@@ -2262,7 +2319,7 @@ setInterval(() => {
 
 try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v27 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v28 — démarré sur le port', process.env.PORT || 3000);
   if (process.env.GROQ_API_KEY) {
     console.log('🤖 IA Groq : CLÉ TROUVÉE ✅ — questions illimitées (français + wolof)');
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
