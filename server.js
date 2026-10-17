@@ -221,6 +221,7 @@ function serialize(room) {
       answered: !!room.turn.answered,
       ai: !!room.turn.ai,
     } : null,
+    aiErr: room.aiErr || null,
     maxPlayers: MAX_PLAYERS,
     maxMisses: MAX_MISSES,
   };
@@ -277,12 +278,121 @@ function beginChoosing(room) {
   broadcast(room);
 }
 
+/* ═══ v25 · IA GROQ : questions ILLIMITÉES selon le niveau + mode wolof ═══ */
+let AI_MODELS = null, AI_MODELS_AT = 0;
+
+function aiWarn(room, msg) {
+  console.log('⚠️ IA :', msg);
+  if (room) { room.aiErr = msg; if (!room.aiWarned) { sys(room, '⚠️ ' + msg); room.aiWarned = true; } }
+}
+
+async function pickModel() {
+  if (AI_MODELS && AI_MODELS.length && Date.now() - AI_MODELS_AT < 600000) return AI_MODELS[0];
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (r.ok) {
+      const ids = ((await r.json()).data || []).map(m => m.id);
+      const pref = [process.env.AI_MODEL, 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'].filter(Boolean);
+      const list = pref.filter(p => ids.indexOf(p) >= 0);
+      AI_MODELS = list.length ? list : ids.filter(id => !/whisper|guard|orpheus|tts|embed/i.test(id)).slice(0, 3);
+      AI_MODELS_AT = Date.now();
+      if (AI_MODELS.length) { console.log('🤖 IA modèle sélectionné :', AI_MODELS[0]); return AI_MODELS[0]; }
+    } else { console.log('⚠️ IA liste modèles HTTP', r.status); }
+  } catch (e) { console.log('⚠️ IA liste modèles injoignable :', e.message); }
+  return null;
+}
+
+async function aiQuestion(room, diff, type, name, gender) {
+  if (!process.env.GROQ_API_KEY) return null;
+  /* ~1 question sur 5 est générée EN WOLOF, inspirée de tes exemples perso */
+  const wolofMode = WOLOF.verite.length && WOLOF.action.length && Math.random() < 0.22;
+  const niveau = { 1: 'légère et fun, tout public adulte', 2: 'coquine', 3: 'très directe, sans filtre', 4: 'EXPLICITE : vocabulaire cru voulu (fesse, seins, bite, chatte…), sans AUCUN filtre, adultes consentants' }[diff] || 'coquine';
+  const THEMES = ['un fantasme jamais avoué', 'une première fois', 'un lieu risqué', 'les préliminaires', 'une position précise', 'les sextoys', 'les sextos', 'un souvenir très chaud', 'la jalousie au lit', 'le corps de quelqu un ici', 'un rêve érotique', 'la durée et l endurance', 'une confession gênante mais excitante', 'le massage', 'un vêtement précis', 'le moment où tu as perdu le contrôle', 'la bouche (mordre, lécher, sucer)', 'une nuit que tu refais mentalement', 'un jeu interdit entre adultes', 'l admirer en secret'];
+  const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+  const eviter = ((room && room.lastQs) || []).filter(Boolean).slice(-3);
+  let prompt;
+  if (wolofMode) {
+    const pool = WOLOF[type] || [], ex = [];
+    while (ex.length < Math.min(4, pool.length)) { const c = pool[Math.floor(Math.random() * pool.length)]; if (ex.indexOf(c) < 0) ex.push(c); }
+    prompt = 'Tu es le meneur d un Vérité ou Action 18+ entre adultes consentants au Sénégal. Génère UNE seule '
+      + (type === 'verite' ? 'question de VÉRITÉ très intime' : 'ACTION très osée à faire MAINTENANT')
+      + ' ÉCRITE EN WOLOF (langue du Sénégal), du même style et du même registre que ces exemples : "' + ex.join('" / "') + '". '
+      + 'Niveau demandé : ' + niveau + '. Thème : ' + theme + '. UNE seule phrase courte et directe, en wolof. '
+      + (eviter.length ? 'Ne ressemble à aucune de ces questions déjà posées : "' + eviter.join('" / "') + '". ' : '')
+      + 'Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
+  } else {
+    prompt = 'Tu es le meneur TRÈS CHAUD d un Vérité ou Action entre adultes consentants (18+). '
+      + 'Génère UNE seule ' + (type === 'verite' ? 'question de VÉRITÉ très intime' : 'ACTION très osée à faire MAINTENANT (peut exiger une photo ou une vidéo envoyée en privé 📎)')
+      + ' pour le joueur "' + name + '" (' + (gender === 'femme' ? 'une femme' : 'un homme') + '). Niveau demandé : ' + niveau + '. '
+      + 'Thème imposé : ' + theme + '. '
+      + 'RÈGLES ABSOLUES : français SIMPLE de tous les jours, UNE seule phrase COURTE (15 à 25 mots maximum), directe, brûlante, ose tout — le contexte est 18+. '
+      + 'La question COMMENCE par le prénom du joueur suivi d une virgule (exemple : « ' + name + ', … »). '
+      + (eviter.length ? 'Ne ressemble à AUCUNE de ces questions déjà posées : "' + eviter.join('" / "') + '". ' : '')
+      + 'Réponds UNIQUEMENT avec un JSON valide : {"question": "..."}';
+  }
+  const tentes = [];
+  for (let essai = 0; essai < 3; essai++) {
+    try {
+      const model = await pickModel();
+      if (!model || tentes.indexOf(model) >= 0) break;
+      tentes.push(model);
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], temperature: 1.15, max_tokens: 600, response_format: { type: 'json_object' } }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (r.status === 404) {
+        console.log('⚠️ IA : modèle', model, 'inaccessible (404) → suivant');
+        if (AI_MODELS) AI_MODELS = AI_MODELS.filter(m => m !== model);
+        AI_MODELS_AT = 0;
+        continue;
+      }
+      if (!r.ok) {
+        let detail = '';
+        try { detail = (await r.text()).slice(0, 120); } catch (e) {}
+        aiWarn(room, 'IA (HTTP ' + r.status + ') : ' + (r.status === 401 ? 'clé INVALIDE — recrée-la sur console.groq.com' : r.status === 429 ? 'limite atteinte, réessaie dans quelques minutes' : detail || 'erreur Groq'));
+        return null;
+      }
+      const j = await r.json();
+      const ch = (j.choices && j.choices[0]) || {};
+      const content = (ch.message && ch.message.content) || '';
+      let q = null;
+      try { q = JSON.parse(content).question; } catch (e2) { q = null; }
+      if (typeof q === 'string' && q.length > 8 && q.length < 500) {
+        if (room) { room.aiWarned = false; room.aiErr = null; }
+        return q.trim();
+      }
+      aiWarn(room, 'IA : réponse illisible (modèle ' + model + ', fin=' + (ch.finish_reason || '?') + ', contenu=' + String(content).slice(0, 60) + ')');
+      return null;
+    } catch (e) {
+      aiWarn(room, 'IA injoignable : ' + e.message);
+      return null;
+    }
+  }
+  if (tentes.length) aiWarn(room, 'IA : modèle(s) inaccessible(s) pour cette clé (' + tentes.join(', ') + ')');
+  else aiWarn(room, 'IA : aucun modèle disponible');
+  return null;
+}
+
 function beginAnswering(room, type) {
   const t = room.players.get(room.turn.targetId);
   const q = withName(drawQuestion(room, type), t.name);
   room.phase = 'answering';
   room.turn = { targetId: t.id, type, question: q, deadline: Date.now() + ANSWER_TIME, answered: false, ai: false };
   room.lastQs = ((room.lastQs || []).concat(q)).slice(-4);
+  // L'IA (si clé configurée) remplace la question : illimitée, calibrée par niveau, parfois en wolof
+  aiQuestion(room, room.difficulty, type, t.name, t.gender).then(aiq => {
+    if (aiq) aiq = withName(aiq, t.name);
+    if (aiq && room.turn && room.turn.targetId === t.id && room.phase === 'answering' && !room.turn.answered) {
+      room.turn.question = aiq; room.turn.ai = true; room.aiWarned = false; room.aiErr = null;
+      room.lastQs = ((room.lastQs || []).concat(aiq)).slice(-4);
+      broadcast(room);
+    }
+  });
   if (t.isBot) {
     room.timer = setTimeout(() => {
       const ANS = ['Oula... je refuse de répondre 😂', 'Ma réponse est OUI. Point.', 'Franchement ? C\u2019est compliqué 😬', 'C\u2019est vrai mais chut 🤫', 'Je le savais, et j\u2019ai honte 😅', 'Demandez au prochain !'];
@@ -1068,7 +1178,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 24 · VARIÉTÉ + WOLOF RYTHMÉ</div>
+    <div class="ver">VERSION 25 · IA ILLIMITÉE FR + WOLOF</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1699,7 +1809,7 @@ $('#mic').onclick = function () {
   }, function () { toast('Micro inaccessible 😬 Vérifie les permissions.'); });
 };
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v24</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v25</div>
 </body>
 </html>`;
 
@@ -1906,7 +2016,15 @@ setInterval(() => {
 
 try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v24 — démarré sur le port', process.env.PORT || 3000);
-  console.log('🚫 IA désactivée (v24) — questions 100% banque locale XXL');
+  console.log('🌶️ Vérité ou Action v25 — démarré sur le port', process.env.PORT || 3000);
+  if (process.env.GROQ_API_KEY) {
+    console.log('🤖 IA Groq : CLÉ TROUVÉE ✅ — questions illimitées (français + wolof)');
+    fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
+      .then(r => { if (!r.ok) { console.log('🤖 IA vérification clé : HTTP', r.status, r.status === 401 ? '→ CLÉ INVALIDE, recrée-la sur console.groq.com' : ''); return null; } return r.json(); })
+      .then(j => { if (j && j.data) console.log('🤖 IA vérification clé : OK ✅ — modèles dispo :', j.data.map(m => m.id).slice(0, 6).join(', ')); })
+      .catch(e => console.log('🤖 IA vérification clé : injoignable', e.message));
+  } else {
+    console.log('🤖 IA : ABSENTE — mode banque locale 15 471 questions (+ wolof rythmé)');
+  }
   console.log('🇸🇳 Questions wolof perso : 22 intégrées au niveau 🌶️');
 });
