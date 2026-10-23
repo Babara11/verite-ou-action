@@ -1220,7 +1220,8 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .rea button { font-size: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 5px 10px; cursor: pointer; }
 .feed { display: flex; flex-direction: column; gap: 7px; }
 /* ═══ v30 · VRAI INSTA : le salon EST l'écran ═══ */
-#s-game.on { display: flex; flex-direction: column; height: 100dvh; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+/* v30.2 FIX : la classe posée par show() est .active (pas .on) — c'était la cause de la roue géante sur la topbar */
+#s-game.active { display: flex; flex-direction: column; min-height: 100dvh; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
 #s-game .wrap { flex: 1; min-height: 0; gap: 8px; margin: 8px auto 0; }
 #s-game #phase, #s-game #phasehint { display: none; }
 #qband { display: flex; align-items: center; gap: 9px; background: var(--card); border: 1px solid var(--hot); border-radius: 14px; padding: 8px 11px; margin-bottom: 8px; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
@@ -1228,7 +1229,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 #qtext2 { font-size: 13.5px; font-weight: 700; line-height: 1.35; min-width: 0; }
 #qwho { margin-left: auto; font-size: 10.5px; color: var(--mut); white-space: nowrap; flex-shrink: 0; }
 #stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-#feedwrap { position: relative; flex: 1; min-height: 0; }
+#feedwrap { position: relative; flex: 1; min-height: 200px; }
 .chatbody { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 4px 2px 8px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .feed { display: flex; flex-direction: column; gap: 7px; }
 #typing { position: absolute; bottom: 8px; left: 10px; z-index: 5; background: rgba(0,0,0,.55); color: #eee; font-size: 11.5px; padding: 5px 12px; border-radius: 99px; }
@@ -1238,7 +1239,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .chatinput:focus { border-color: var(--hot); }
 #btn-media { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--card); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
 #wheelzone { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, rgba(0,0,0,.18), rgba(0,0,0,.62)); border-radius: 16px; }
-#wheelzone .wheelinner { position: relative; width: min(70vw, 264px); }
+#wheelzone .wheelinner { position: relative; width: min(62vw, 238px); }
 #stage #choice { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 6; }
 #stage #choice .btn { box-shadow: 0 8px 30px rgba(0,0,0,.5); }
 #stage #spinrow { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 6; }
@@ -1356,7 +1357,6 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <button id="btn-leave" class="gearbtn" title="Quitter le salon">🚪</button>
     <span class="code-big" id="g-code" title="Cliquer pour copier">----</span>
     <span id="plugcount" class="plugcount">👥 1/6</span>
-    <button id="btn-invite2" class="btn small wa">💬</button>
     <button id="btn-settings" class="gearbtn" style="margin-left:auto" title="Paramètres">⚙️</button>
   </div>
   <div class="setpanel" id="setpanel-game">
@@ -1370,6 +1370,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     </div>
     <div class="setlbl">🎨 Thème de l app (admin, retenu hors ligne) :</div>
     <div class="setrow" id="themrow"></div>
+    <button id="btn-invite-wa" class="btn wa" style="width:100%;margin-top:12px">📲 Partager le salon sur WhatsApp</button>
     <button id="btn-stop2" class="btn danger" style="width:100%;margin-top:12px" hidden>🏁 Terminer la partie (tout est supprimé)</button>
     <p class="hint" id="setinfo2" style="margin-top:8px"></p>
   </div>
@@ -1757,7 +1758,9 @@ document.querySelectorAll('#diffrow .btn').forEach(function (b) {
 
 function inviteLink() { return '🔥 On joue à Vérité ou Action (18+) ! Rejoins ma partie : ' + location.origin + '/#/join/' + S.code; }
 $('#btn-invite').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
-$('#btn-invite2').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
+function inviteWA() { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); }
+var biw = document.getElementById('btn-invite-wa');
+if (biw) biw.onclick = inviteWA;
 function copyCode() { if (!S) return; if (navigator.clipboard) navigator.clipboard.writeText(S.code).then(function () { toast('📋 Code copié : ' + S.code); }, function () { toast('Code : ' + S.code, true); }); else toast('Code : ' + S.code, true); }
 $('#lobby-code').onclick = copyCode;
 $('#g-code').onclick = copyCode;
@@ -2325,7 +2328,7 @@ $('#mic').onclick = function () {
     </div>
   </div>
 </div>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v30</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v30.2</div>
 </body>
 </html>`;
 
