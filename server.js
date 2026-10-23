@@ -1226,7 +1226,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 29 · CHAT INSTA 📸</div>
+    <div class="ver">VERSION 29.3 · CHAT INSTA 📸</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1930,6 +1930,7 @@ $('#mic').onclick = function () {
     rec.onstop = function () {
       clearInterval(recInt);
       $('#mic').classList.remove('rec');
+      $('#mic').textContent = '🎤';
       stream.getTracks().forEach(function (t) { t.stop(); });
       var dur = Date.now() - recT0;
       if (dur < 600) { toast('Trop court ! 1 seconde minimum.'); return; }
@@ -2159,7 +2160,7 @@ $('#mic').onclick = function () {
     </div>
   </div>
 </div>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29.2</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29.3</div>
 </body>
 </html>`;
 
