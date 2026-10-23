@@ -1181,13 +1181,26 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 #qtext { font-size: 18px; font-weight: 700; line-height: 1.45; }
 .row { display: flex; gap: 8px; }
 .row .input { text-align: left; flex: 1; }
-#mic { width: 100%; padding: 15px; font-size: 16px; }
+#mic { font-size: 18px; }
 #mic.rec { background: var(--hot); color: #fff; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { transform: scale(1.04); } }
 .rea { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .rea button { font-size: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 5px 10px; cursor: pointer; }
 .feed { display: flex; flex-direction: column; gap: 7px; max-height: 34vh; overflow-y: auto; padding: 4px; }
-.msg { max-width: 85%; background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 8px 11px; font-size: 14px; word-break: break-word; }
+.chatpanel { display: flex; flex-direction: column; }
+.chathead { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); position: relative; }
+.chathead .chatlabel { font-size: 12.5px; font-weight: 900; color: var(--mut); letter-spacing: .6px; }
+.chathead #btn-media { position: absolute; right: 9px; padding: 6px 11px; }
+.chatbody { display: flex; flex-direction: column; gap: 7px; padding: 12px 11px; max-height: 34vh; overflow-y: auto; }
+.chatbar { display: flex; gap: 8px; align-items: center; padding: 9px 10px; border-top: 1px solid var(--line); }
+.chatinput { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; outline: none; }
+.chatinput:focus { border-color: var(--hot); }
+.roundbtn { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg2); font-size: 18px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
+.roundbtn.send { background: linear-gradient(135deg, var(--hot), var(--hot2)); border: none; color: #fff; font-size: 16px; }
+.msg { max-width: 82%; background: var(--bg2); border: none; border-radius: 18px 18px 18px 6px; padding: 9px 12px; font-size: 14px; word-break: break-word; }
+.msg.mine { align-self: flex-end; background: linear-gradient(135deg, var(--hot), var(--hot2)); color: #fff; border-radius: 18px 18px 6px 18px; }
+.msg.mine .who { color: rgba(255,255,255,.85); }
+.msg.answer { box-shadow: 0 0 0 2px var(--ok); }
 .msg .who { font-size: 11px; color: var(--hot2); font-weight: 800; margin-bottom: 2px; }
 .msg.answer { border-color: var(--ok); }
 .msg.sys { align-self: center; background: transparent; border: none; color: var(--mut); font-size: 12px; text-align: center; }
@@ -1198,13 +1211,11 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 @keyframes rise { to { transform: translateY(-105vh) rotate(25deg); opacity: .1; } }
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--hot); color: #fff; font-weight: 700; padding: 12px 18px; border-radius: 14px; z-index: 99; font-size: 14px; max-width: 92vw; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 [hidden] { display: none !important; }
-.feedhead { display: flex; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--line); }
 .badge-unread { background: var(--hot); color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 11px; font-weight: 800; }
 #inapp { position: fixed; inset: 0; background: rgba(0,0,0,.94); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
 #inapp[hidden] { display: none !important; }
 .inapp-card { max-width: 400px; background: var(--card); border: 1.5px solid var(--hot); border-radius: 20px; padding: 22px; text-align: center; }
 .media-img, .media-vid { max-width: 100%; border-radius: 12px; margin-top: 4px; }
-.msg.mine { align-self: flex-end; background: color-mix(in srgb, var(--hot) 16%, var(--card)); }
 .diffrow .btn { padding: 11px 4px; font-size: 13.5px; }
 </style>
 </head>
@@ -1215,7 +1226,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 29 · MODE INSTA 📸</div>
+    <div class="ver">VERSION 29 · CHAT INSTA 📸</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1326,24 +1337,16 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
       <div id="qtype"></div>
       <div id="qtext"></div>
     </div>
-    <div id="answer" hidden>
-      <div class="row">
-        <input type="text" id="in-answer" class="input" maxlength="300" placeholder="Ta réponse...">
-        <button id="btn-send" class="btn primary">➤</button>
-      </div>
-      <p class="hint" style="text-align:center;margin:4px 0">— ou réponds en vocal —</p>
-      <button id="mic" class="btn">🎤 Appuie pour enregistrer (30s max)</button>
-    </div>
     <div id="spinrow" hidden style="text-align:center;margin:10px 0">
       <button id="btn-spin" class="btn" style="font-size:17px;padding:14px 22px">🎯 LANCER LA ROUE !</button>
       <p class="hint" style="margin-top:5px">Tout le monde peut lancer — le premier clic gagne 😉</p>
     </div>
-    <div class="panel" style="padding:0">
-      <div class="feedhead">
-        <button id="feedtoggle" class="btn small">💬 Messages <span id="unread" class="badge-unread" hidden></span> <span id="feedarrow">▼</span></button>
-        <button id="btn-media" class="btn small">📎 Partager</button>
+    <div class="panel chatpanel" style="padding:0">
+      <div class="chathead">
+        <span class="chatlabel">💬 LE SALON</span>
+        <button id="btn-media" class="btn small" title="Photo / vidéo">📷</button>
       </div>
-      <div id="feedbody" style="padding:10px">
+      <div id="feedbody" class="chatbody">
         <div id="mediaform" hidden style="border:1px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px">
           <p class="hint" style="margin-bottom:6px">📷 Photo (comprimée auto) ou 🎬 vidéo courte (max ~2 Mo)</p>
           <input type="file" id="mediafile" accept="image/*,video/*" style="max-width:100%;font-size:12px">
@@ -1354,11 +1357,13 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
             <button id="btn-media-cancel" class="btn small">Annuler</button>
           </div>
         </div>
-        <div class="feed" id="feed" style="margin-top:8px"></div>
-        <div class="row" style="margin-top:8px">
-          <input type="text" id="in-chat" class="input" maxlength="300" placeholder="Message libre...">
-          <button id="btn-chat" class="btn primary">➤</button>
-        </div>
+        <div class="feed" id="feed"></div>
+      </div>
+      <div class="chatbar">
+        <input type="text" id="in-chat" class="chatinput" maxlength="300" placeholder="Message…">
+        <button id="mic" class="roundbtn" title="Vocal (30s)">🎤</button>
+        <button id="btn-chat" class="roundbtn send" title="Envoyer">➤</button>
+      </div>
       </div>
     </div>
   </div>
@@ -1720,7 +1725,8 @@ function renderGame() {
     $('#qtype').textContent = (t.ai ? '🤖 IA · ' : '') + (t.type === 'verite' ? 'VÉRITÉ 💬 — réponds sans mentir' : 'ACTION 🎯 — à toi d\u2019oser');
     $('#qtext').textContent = t.question;
   }
-  $('#answer').hidden = !(S.phase === 'answering' && isMe && !t.answered);
+  var ic = $('#in-chat');
+  if (ic) ic.placeholder = (S.phase === 'answering' && isMe && t && !t.answered) ? '💬 Ta réponse… (texte)' : 'Message…';
   $('#spinrow').hidden = S.phase !== 'reacting';
   var g = $('#game-grid'); g.innerHTML = '';
   for (var k = 0; k < S.maxPlayers; k++) {
@@ -1795,9 +1801,7 @@ drawWheel();
 $('#btn-verite').onclick = function () { socket.emit('turn:choose', { type: 'verite' }); };
 $('#btn-action').onclick = function () { socket.emit('turn:choose', { type: 'action' }); };
 tap($('#btn-spin'), function () { socket.emit('turn:spin'); });
-function sendAnswer() { var v = $('#in-answer').value.trim(); if (!v) return; $('#in-answer').value = ''; socket.emit('chat:text', { text: v }); }
-$('#btn-send').onclick = sendAnswer;
-$('#in-answer').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendAnswer(); });
+/* Réponse = le champ Message… (le serveur compte le message du joueur désigné comme sa réponse) */
 function sendChat() { var v = $('#in-chat').value.trim(); if (!v) return; $('#in-chat').value = ''; socket.emit('chat:text', { text: v }); }
 $('#btn-chat').onclick = sendChat;
 $('#in-chat').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
@@ -1823,12 +1827,7 @@ var items = [];
 var feedOpen = true, unread = 0;
 function updateUnread() { var b = $('#unread'); if (!b) return; b.hidden = feedOpen || unread === 0; b.textContent = unread + ' nouveaux'; }
 function addMsg(it) { items.push(it); if (items.length > 60) items.shift(); if (!feedOpen && it.kind !== 'sys') { unread++; updateUnread(); } }
-$('#feedtoggle').onclick = function () {
-  feedOpen = !feedOpen;
-  $('#feedbody').hidden = !feedOpen;
-  $('#feedarrow').textContent = feedOpen ? '\u25BC' : '\u25B6';
-  if (feedOpen) { unread = 0; updateUnread(); }
-};
+
 $('#btn-media').onclick = function () {
   if (!S) return;
   var box = $('#media-to'); box.innerHTML = '';
@@ -1889,8 +1888,8 @@ function drawFeed() {
     var el = document.createElement('div');
     if (it.kind === 'sys') { el.className = 'msg sys'; el.textContent = it.text; }
     else if (it.kind === 'audio' || it.kind === 'answer-audio') {
-      el.className = 'msg' + (it.kind === 'answer-audio' ? ' answer' : '');
-      var w = document.createElement('div'); w.className = 'who'; w.textContent = '🎙️ ' + it.name;
+      el.className = 'msg' + (it.kind === 'answer-audio' ? ' answer' : '') + (it.mid === socket.id ? ' mine' : '');
+      var w = document.createElement('div'); w.className = 'who'; w.textContent = '🎙️ ' + (it.mid === socket.id ? 'Toi' : it.name);
       var a = document.createElement('div'); a.className = 'audio';
       a.innerHTML = '<span class="p">▶</span><span>' + Math.round((it.ms || 0) / 1000) + 's — appuie pour écouter</span>';
       a.onclick = (function (b64) { return function () { try { new Audio(b64).play(); } catch (e) {} }; })(it.b64);
@@ -1903,14 +1902,14 @@ function drawFeed() {
       if (it.kind === 'photo') { var im = document.createElement('img'); im.src = it.b64; im.className = 'media-img'; el.appendChild(im); }
       else { var v = document.createElement('video'); v.src = it.b64; v.className = 'media-vid'; v.controls = true; el.appendChild(v); }
     } else {
-      el.className = 'msg' + (it.kind === 'answer' ? ' answer' : '');
-      var w2 = document.createElement('div'); w2.className = 'who'; w2.textContent = (it.kind === 'answer' ? '💬 ' : '') + it.name;
+      el.className = 'msg' + (it.kind === 'answer' ? ' answer' : '') + (it.mid === socket.id ? ' mine' : '');
+      var w2 = document.createElement('div'); w2.className = 'who'; w2.textContent = (it.kind === 'answer' ? '💬 ' : '') + (it.mid === socket.id ? 'Toi' : it.name);
       var tx = document.createElement('span'); tx.textContent = it.text;
       el.appendChild(w2); el.appendChild(tx);
     }
     f.appendChild(el);
   });
-  f.scrollTop = f.scrollHeight;
+  f.scrollTop = 0;
 }
 
 /* ---------- Micro ---------- */
@@ -1942,7 +1941,7 @@ $('#mic').onclick = function () {
     rec.start();
     recT0 = Date.now();
     $('#mic').classList.add('rec');
-    $('#mic').textContent = '🔴 Enregistrement... appuie pour envoyer';
+    $('#mic').textContent = '🔴';
     recInt = setInterval(function () {
       if (Date.now() - recT0 > 30000 && rec.state === 'recording') rec.stop();
     }, 300);
@@ -2160,7 +2159,7 @@ $('#mic').onclick = function () {
     </div>
   </div>
 </div>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29.2</div>
 </body>
 </html>`;
 
@@ -2443,4 +2442,3 @@ server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
   }
   console.log('🇸🇳 Questions wolof perso : 22 intégrées au niveau 🌶️');
 });
- 
