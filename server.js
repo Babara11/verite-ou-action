@@ -1093,6 +1093,19 @@ body[data-theme="sunset"] { --bg:#0d0a1a; --bg2:#2a1538; --card:#211230; --line:
 body[data-theme="honey"] { --bg:#171006; --bg2:#33240f; --card:#29200f; --line:#4d3c1c; --mut:#d8c39a; --hot:#ffb020; --hot2:#ffe45c; }
 body[data-theme="velvet"] { --bg:#180a12; --bg2:#3a1327; --card:#2c1020; --line:#55223c; --mut:#d8a8c0; --hot:#ff2e63; --hot2:#ff6a8e; }
 body[data-theme="ocean"] { --bg:#04121c; --bg2:#0a2436; --card:#0a1e2e; --line:#16445e; --mut:#9ac4d8; --hot:#19c8c8; --hot2:#5cffb0; }
+body[data-theme="lavender"] { --bg:#120d1c; --bg2:#241a38; --card:#1d1430; --line:#3a2b58; --mut:#c2b2e0; --hot:#a86bff; --hot2:#ff6ad5; }
+body[data-theme="mint"] { --bg:#07160f; --bg2:#0f2b1c; --card:#0d2418; --line:#1d4a30; --mut:#a8d8bd; --hot:#2fe08a; --hot2:#b8ff5c; }
+body[data-theme="coffee"] { --bg:#140f08; --bg2:#2b2013; --card:#231a0f; --line:#4a3823; --mut:#d8c0a0; --hot:#e0903c; --hot2:#ffb84d; }
+body[data-theme="neon"] { --bg:#05050f; --bg2:#12122e; --card:#0e0e24; --line:#2a2a5e; --mut:#a0a0e8; --hot:#00e5ff; --hot2:#ff00e5; }
+body[data-theme="gold"] { --bg:#0d0c07; --bg2:#241f0e; --card:#1e1a0c; --line:#4a4020; --mut:#e0d0a0; --hot:#ffd700; --hot2:#fff2a8; }
+.plugcount { font-size: 13px; font-weight: 900; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 11px; white-space: nowrap; }
+.segbar { display: flex; gap: 6px; }
+.segbar .btn { flex: 1; padding: 12px 4px; font-size: 13px; line-height: 1.3; border-radius: 14px; text-align: center; }
+.segbar .btn.sel { background: linear-gradient(135deg, var(--hot), var(--hot2)); border: none; color: #fff; font-weight: 900; box-shadow: 0 4px 16px rgba(255, 59, 92, .35); transform: scale(1.03); }
+@keyframes tutozoom { from { transform: scale(.94); opacity: .4; } to { transform: none; opacity: 1; } }
+.tuto-scene { animation: tutozoom .45s ease; }
+.tuto-mock { background: var(--bg2); border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.tuto-arrow { font-size: 18px; }
 .gearbtn { width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg2); font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform .3s ease, border-color .2s ease; }
 .gearbtn:hover { transform: rotate(45deg); border-color: var(--hot); }
 .setpanel { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin: 10px 0; }
@@ -1202,7 +1215,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 28 · ARRIVÉE DES JOUEURS RÉPARÉE</div>
+    <div class="ver">VERSION 29 · MODE INSTA 📸</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1210,6 +1223,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     </div>
     <details class="howto">
       <summary>🎲 Première fois ? Comment ça marche (30 sec)</summary>
+      <div class="howto-body"><button id="btn-tuto" class="btn small" style="width:100%">🎬 Revoir la mini-vidéo tuto</button></div>
       <div class="howto-body">
         👑 <b>1.</b> Un joueur crée le salon et partage le code à 4 lettres (bouton 💬).<br>
         🚪 <b>2.</b> Les autres tapent leur pseudo + le code puis « Rejoindre » (6 max).<br>
@@ -1260,12 +1274,13 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     </div>
     <div class="panel">
       <h3>🔥 Difficulté des questions</h3>
-      <div class="diffrow" id="diffrow">
-        <button class="btn" data-d="1">😄 Facile</button>
-        <button class="btn" data-d="2">😏 Moyen</button>
-        <button class="btn" data-d="3">🔥 Direct</button>
-        <button class="btn" data-d="4">🌶️ CHAUD</button>
+      <div class="diffrow segbar" id="diffrow">
+        <button class="btn" data-d="1">😄<br>Facile</button>
+        <button class="btn" data-d="2">😏<br>Moyen</button>
+        <button class="btn" data-d="3">🔥<br>Direct</button>
+        <button class="btn" data-d="4">🌶️<br>CHAUD</button>
       </div>
+      <p class="hint" style="margin-top:6px">🌶️ = le plus chaud : vocabulaire cru + gages photo/vidéo</p>
     </div>
     <button id="btn-addbot" class="btn" hidden>🤖 Ajouter un robot (test solo)</button>
     <button id="btn-start" class="btn big primary">▶️ LANCER LA PARTIE</button>
@@ -1275,30 +1290,31 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 
 <section id="s-game" class="screen">
   <div class="topbar">
+    <button id="btn-leave" class="gearbtn" title="Quitter le salon">🚪</button>
     <span class="code-big" id="g-code" title="Cliquer pour copier">----</span>
+    <span id="plugcount" class="plugcount">👥 1/6</span>
     <button id="btn-invite2" class="btn small wa">💬</button>
     <button id="btn-settings" class="gearbtn" style="margin-left:auto" title="Paramètres">⚙️</button>
-    <button id="btn-stop" class="btn small danger" hidden>Terminer</button>
   </div>
   <div class="setpanel" id="setpanel-game">
     <h3>⚙️ Paramètres</h3>
-    <div class="setlbl">🎨 Thème de l app (choisi par l admin, retenu hors ligne) :</div>
+    <div class="setlbl">🎚️ Niveau des questions (admin, même en pleine partie) :</div>
+    <div class="segbar" id="setdiff">
+      <button class="btn sd" data-d="1">😄<br>Facile</button>
+      <button class="btn sd" data-d="2">😏<br>Moyen</button>
+      <button class="btn sd" data-d="3">🔥<br>Direct</button>
+      <button class="btn sd" data-d="4">🌶️<br>CHAUD</button>
+    </div>
+    <div class="setlbl">🎨 Thème de l app (admin, retenu hors ligne) :</div>
     <div class="setrow" id="themrow"></div>
-    <p class="hint" id="setinfo" style="margin-top:8px"></p>
+    <button id="btn-stop2" class="btn danger" style="width:100%;margin-top:12px" hidden>🏁 Terminer la partie (tout est supprimé)</button>
+    <p class="hint" id="setinfo2" style="margin-top:8px"></p>
   </div>
   <div class="wrap">
     <div class="grid6" id="game-grid"></div>
     <div id="phase">…</div>
     <div class="phasehint" id="phasehint"></div>
-    <div id="gamediff" style="display:flex;gap:6px;justify-content:center;align-items:center;margin:2px 0 8px;flex-wrap:wrap">
-      <span class="hint" id="gamediff-label" style="font-weight:800"></span>
-      <button class="btn small gd" data-d="1" style="padding:6px 10px">😄</button>
-      <button class="btn small gd" data-d="2" style="padding:6px 10px">😏</button>
-      <button class="btn small gd" data-d="3" style="padding:6px 10px">🔥</button>
-      <button class="btn small gd" data-d="4" style="padding:6px 10px">🌶️</button>
-    </div>
-    <div class="timetrack" id="timetrack" hidden><div class="timefill" id="timefill"></div></div>
-    <div class="wheelzone">
+    <div class="wheelzone" id="wheelzone">
       <canvas id="wheel" width="560" height="560"></canvas>
       <div class="pointer">▼</div>
     </div>
@@ -1328,7 +1344,6 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
         <button id="btn-media" class="btn small">📎 Partager</button>
       </div>
       <div id="feedbody" style="padding:10px">
-        <div class="rea" id="rea"></div>
         <div id="mediaform" hidden style="border:1px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px">
           <p class="hint" style="margin-bottom:6px">📷 Photo (comprimée auto) ou 🎬 vidéo courte (max ~2 Mo)</p>
           <input type="file" id="mediafile" accept="image/*,video/*" style="max-width:100%;font-size:12px">
@@ -1383,8 +1398,8 @@ function toast(m, long) { var t = $('#toast'); t.textContent = m; t.hidden = fal
 function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
-const THEMES_UI = [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊']];
-const THEME_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel', velvet: '🍷 Velours', ocean: '🌊 Océan' };
+const THEMES_UI = [['grenade', '🌶️'], ['sunset', '🌅'], ['honey', '🍯'], ['velvet', '🍷'], ['ocean', '🌊'], ['lavender', '💜'], ['mint', '🌿'], ['coffee', '☕'], ['neon', '🌌'], ['gold', '👑']];
+const THEME_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel', velvet: '🍷 Velours', ocean: '🌊 Océan', lavender: '💜 Lavande', mint: '🌿 Menthe', coffee: '☕ Café', neon: '🌌 Néon', gold: '👑 Or' };
 function buildSwatches(boxId, isRoom) {
   var box = document.getElementById(boxId); if (!box) return;
   box.innerHTML = '';
@@ -1426,6 +1441,43 @@ function applyTheme(t) {
 }
 (function () { var t = null; try { t = localStorage.getItem('voa_theme'); } catch (e) {} if (t) { try { document.body.setAttribute('data-theme', t); } catch (e) {} } })();
 document.addEventListener('DOMContentLoaded', function () { buildSwatches('hometheme', false); });
+
+/* ---------- 🎬 Mini-vidéo tuto (lecteur animé 4 scènes) ---------- */
+var TUTO = [
+  { t: '🎓 Créer ton salon', l: ['Tape ton pseudo puis « CRÉER UN SALON »', 'Un CODE à 4 lettres apparaît — envoie-le sur WhatsApp 📲'], m: [['🙋', 'Alioune'], ['🎓', 'CRÉER UN SALON'], ['🔑', 'Code : WQ38 → 💬 WhatsApp']] },
+  { t: '🚪 Rejoindre avec le CODE', l: ['Tes amis tapent leur pseudo + le code', 'L admin les accepte ✅ et ils apparaissent dans la grille'], m: [['🙋', 'Jacqueline'], ['🔤', 'Code : WQ38'], ['✅', 'Acceptée par l admin !']] },
+  { t: '🎡 Jouer !', l: ['La roue désigne quelqu un → Vérité 💬 ou Action 🎯', 'Réponse par texte, vocal 🎤, photo 📷 ou vidéo 🎬'], m: [['🎡', 'La roue choisit…'], ['💬', 'Vérité ou 🎯 Action'], ['🔥', 'Il répond → on relance tous !']] },
+  { t: '📴 Même sans internet', l: ['Installe l app : Partager ⬆️ → « Sur l écran d accueil »', 'Sans connexion → bouton « HORS LIGNE » : on joue sur 1 téléphone !'], m: [['✈️', 'Mode avion ON'], ['🌶️', 'Icône 🌶️ sur l écran'], ['🎲', 'HORS LIGNE (1 téléphone)']] }
+];
+var tutoIdx = 0, tutoTimer = null;
+function tutoShow(i) {
+  tutoIdx = (i + TUTO.length) % TUTO.length;
+  var s = TUTO[tutoIdx], box = document.getElementById('tuto-scene');
+  if (!box) return;
+  box.innerHTML = '<div style="font-size:38px">' + s.t + '</div>'
+    + s.m.map(function (x) { return '<div class="tuto-mock"><span style="font-size:20px">' + x[0] + '</span> ' + x[1] + '</div>'; }).join('<span class="tuto-arrow">↓</span>')
+    + '<div style="font-size:12.5px;color:var(--mut);line-height:1.5">' + s.l.map(function (x) { return '• ' + x; }).join('<br>') + '</div>';
+  box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+  var dots = document.getElementById('tuto-dots');
+  dots.innerHTML = TUTO.map(function (_, k) {
+    return '<span style="width:9px;height:9px;border-radius:50%;background:' + (k === tutoIdx ? 'var(--hot)' : 'var(--line)') + '"></span>';
+  }).join('');
+  document.getElementById('tuto-next').textContent = (tutoIdx === TUTO.length - 1) ? 'Commencer 🌶️' : 'Suivant ▶';
+}
+function tutoOpen(auto) {
+  var t = document.getElementById('tuto'); if (!t) return;
+  t.hidden = false; tutoShow(0);
+  clearInterval(tutoTimer);
+  tutoTimer = setInterval(function () { tutoShow(tutoIdx + 1); }, 5000);
+  try { if (auto) localStorage.setItem('voa_tuto', '1'); } catch (e) {}
+}
+function tutoClose() { var t = document.getElementById('tuto'); if (t) t.hidden = true; clearInterval(tutoTimer); try { localStorage.setItem('voa_tuto', '1'); } catch (e) {} }
+document.addEventListener('click', function (e) {
+  if (e.target.closest && e.target.closest('#btn-tuto')) tutoOpen(false);
+  if (e.target.closest && e.target.closest('#tuto-skip')) tutoClose();
+  if (e.target.closest && e.target.closest('#tuto-next')) { if (tutoIdx === TUTO.length - 1) tutoClose(); else tutoShow(tutoIdx + 1); }
+});
+(function () { var seen = null; try { seen = localStorage.getItem('voa_tuto'); } catch (e) {} if (!seen) setTimeout(function () { tutoOpen(true); }, 600); })();
 try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
 
 /* Détecteur d'erreur visible : tout plantage du script s'affiche à l'écran */
@@ -1617,9 +1669,7 @@ $('#btn-leave-lobby').onclick = function () { socket.emit('room:leave'); del('vo
 document.querySelectorAll('#diffrow .btn').forEach(function (b) {
   tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
 });
-document.querySelectorAll('#gamediff .gd').forEach(function (b) {
-  tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
-});
+
 function inviteLink() { return '🔥 On joue à Vérité ou Action (18+) ! Rejoins ma partie : ' + location.origin + '/#/join/' + S.code; }
 $('#btn-invite').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
 $('#btn-invite2').onclick = function () { socket.emit('invite:refresh'); window.open('https://wa.me/?text=' + encodeURIComponent(inviteLink()), '_blank'); };
@@ -1633,14 +1683,15 @@ var PH = { choosing: 60000, answering: 120000, reacting: 20000 };
 function renderGame() {
   var m = me(); if (!m) return;
   $('#g-code').textContent = S.code;
-  $('#btn-stop').hidden = !isAdmin();
+  var pc = $('#plugcount');
+  if (pc) pc.textContent = '👥 ' + S.players.filter(function (p) { return p.connected || p.isBot; }).length + '/' + S.maxPlayers;
   var t = S.turn, tp = null;
   if (t) for (var i = 0; i < S.players.length; i++) if (S.players[i].id === t.targetId) tp = S.players[i];
   var isMe = !!(t && t.targetId === socket.id);
   var ph = $('#phase');
   if (S.phase === 'spinning') ph.textContent = '🎡 La roue tourne...';
-  else if (S.phase === 'choosing') ph.textContent = isMe ? 'À TOI ! Choisis vite (60s) :' : '🎯 ' + (tp ? tp.name : '?') + ' choisit...';
-  else if (S.phase === 'answering') ph.textContent = isMe ? '💬 Réponds sans filtrer (2 min) !' : '💬 ' + (tp ? tp.name : '?') + ' répond...';
+  else if (S.phase === 'choosing') ph.textContent = isMe ? 'À TOI ! Choisis :' : '🎯 ' + (tp ? tp.name : '?') + ' choisit...';
+  else if (S.phase === 'answering') ph.textContent = isMe ? '💬 Réponds sans filtrer !' : '💬 ' + (tp ? tp.name : '?') + ' répond...';
   else if (S.phase === 'reacting') ph.textContent = '🔥 Réactions… 🎯 TOUS peuvent lancer la roue !';
   else ph.textContent = '⏸️ En pause...';
   var hint = $('#phasehint');
@@ -1651,18 +1702,18 @@ function renderGame() {
     else if (S.phase === 'reacting') hint.textContent = 'Réagissez avec les emoji… et n importe qui tape 🎯 pour relancer !';
     else hint.textContent = '';
   }
-  var gd = $('#gamediff'), gdl = $('#gamediff-label');
-  if (gd && gdl) {
-    gdl.textContent = 'Niveau : ' + ['😄 Facile', '😏 Moyen', '🔥 Direct', '🌶️ CHAUD'][S.difficulty - 1];
-    var gdb = gd.querySelectorAll('.gd');
-    for (var gi = 0; gi < gdb.length; gi++) {
-      gdb[gi].classList.toggle('sel', +gdb[gi].dataset.d === S.difficulty);
-      gdb[gi].style.display = isAdmin() ? '' : 'none';
-    }
+  var sdb = document.querySelectorAll('#setdiff .sd');
+  for (var gi = 0; gi < sdb.length; gi++) {
+    sdb[gi].classList.toggle('sel', +sdb[gi].dataset.d === S.difficulty);
+    sdb[gi].style.display = isAdmin() ? '' : 'none';
   }
-  var showT = t && t.deadline && PH[S.phase];
-  $('#timetrack').hidden = !showT;
+  var si2 = document.getElementById('setinfo2');
+  if (si2) si2.textContent = isAdmin() ? 'Niveau et thème s appliquent à toute la salle, même en pleine partie 🔥' : 'Seul l admin change le niveau et le thème';
+  var bs2 = document.getElementById('btn-stop2');
+  if (bs2) bs2.hidden = !isAdmin();
   $('#choice').hidden = !(S.phase === 'choosing' && isMe);
+  var wz = document.getElementById('wheelzone');
+  if (wz) wz.hidden = S.phase !== 'spinning';   /* la roue se rétracte dès que la question arrive */
   var showQ = !!(t && t.question && (S.phase === 'answering' || S.phase === 'reacting'));
   $('#qcard').hidden = !showQ;
   if (showQ) {
@@ -1688,12 +1739,7 @@ function renderGame() {
   }
   drawWheel();
 }
-setInterval(function () {
-  if (S && S.turn && S.turn.deadline && PH[S.phase]) {
-    var left = Math.max(0, S.turn.deadline - Date.now());
-    $('#timefill').style.width = (100 * left / PH[S.phase]) + '%';
-  }
-}, 200);
+
 
 /* ---------- Roue ---------- */
 var COLORS = ['#ff2e63', '#7c4dff', '#21c07a', '#ff9f1c', '#3d8bff', '#ff5ca8'];
@@ -1755,14 +1801,16 @@ $('#in-answer').addEventListener('keydown', function (e) { if (e.key === 'Enter'
 function sendChat() { var v = $('#in-chat').value.trim(); if (!v) return; $('#in-chat').value = ''; socket.emit('chat:text', { text: v }); }
 $('#btn-chat').onclick = sendChat;
 $('#in-chat').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
-$('#btn-stop').onclick = function () { if (confirm('Terminer ? TOUT sera supprimé (messages + audios).')) socket.emit('game:stop'); };
-
-/* ---------- Réactions ---------- */
-['🔥', '😂', '😍', '😱', '👏', '❤️', '💀', '🥵'].forEach(function (e) {
-  var b = document.createElement('button'); b.textContent = e;
-  b.onclick = function () { socket.emit('reaction', { emoji: e }); };
-  $('#rea').appendChild(b);
+var bs2o = document.getElementById('btn-stop2');
+if (bs2o) bs2o.onclick = function () { if (confirm('Terminer ? TOUT sera supprimé (messages + audios).')) socket.emit('game:stop'); };
+document.querySelectorAll('#setdiff .sd').forEach(function (b) {
+  tap(b, function () { socket.emit('difficulty', { d: +b.dataset.d }); });
 });
+tap($('#btn-leave'), function () {
+  if (confirm('Quitter le salon ? Tu pourras revenir avec le code.')) { socket.emit('room:leave'); del('voa_code'); S = null; myPending = null; show('s-home'); }
+});
+
+/* ---------- Réactions : emoji libres du clavier via le chat ---------- */
 function float(e) {
   var d = document.createElement('div'); d.className = 'fe'; d.textContent = e;
   d.style.left = (8 + Math.random() * 84) + 'vw';
@@ -1837,7 +1885,7 @@ $('#btn-media-send').onclick = function () {
 function drawFeed() {
   var f = $('#feed'); if (!f) return;
   f.innerHTML = '';
-  items.forEach(function (it) {
+  items.slice().reverse().forEach(function (it) {
     var el = document.createElement('div');
     if (it.kind === 'sys') { el.className = 'msg sys'; el.textContent = it.text; }
     else if (it.kind === 'audio' || it.kind === 'answer-audio') {
@@ -2102,7 +2150,17 @@ $('#mic').onclick = function () {
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v28.4</div>
+<div id="tuto" hidden style="position:fixed;inset:0;z-index:9998;background:rgba(12,4,10,.93);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="max-width:400px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;text-align:center">
+    <div id="tuto-scene" class="tuto-scene" style="min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px"></div>
+    <div id="tuto-dots" style="display:flex;gap:7px;justify-content:center;margin:14px 0 10px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="tuto-skip" class="btn" style="flex:1">Passer</button>
+      <button id="tuto-next" class="btn primary" style="flex:1">Suivant ▶</button>
+    </div>
+  </div>
+</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29</div>
 </body>
 </html>`;
 
@@ -2222,8 +2280,8 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  const THEMES = ['grenade', 'sunset', 'honey', 'velvet', 'ocean'];
-  const THEMES_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel doré', velvet: '🍷 Velours', ocean: '🌊 Océan' };
+  const THEMES = ['grenade', 'sunset', 'honey', 'velvet', 'ocean', 'lavender', 'mint', 'coffee', 'neon', 'gold'];
+  const THEMES_N = { grenade: '🌶️ Grenade', sunset: '🌅 Coucher de soleil', honey: '🍯 Miel doré', velvet: '🍷 Velours', ocean: '🌊 Océan', lavender: '💜 Lavande', mint: '🌿 Menthe', coffee: '☕ Café', neon: '🌌 Néon', gold: '👑 Or' };
   socket.on('theme', ({ t } = {}) => {
     const room = socketRoom.get(socket.id); if (!room) return;
     const me = room.players.get(socket.id); if (!me || !me.isAdmin) return;
@@ -2373,7 +2431,7 @@ setInterval(() => {
 
 try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v28 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v29 — démarré sur le port', process.env.PORT || 3000);
   if (process.env.GROQ_API_KEY) {
     console.log('🤖 IA Groq : CLÉ TROUVÉE ✅ — questions illimitées (français + wolof)');
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
