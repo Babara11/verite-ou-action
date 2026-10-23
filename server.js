@@ -180,6 +180,8 @@ function createRoom(socket, name, difficulty, gender) {
     used: new Set(),
     timer: null,
     feed: [],
+    feedSeq: 0,
+    seen: {},
   };
   rooms.set(room.code, room);
   addPlayer(room, socket, name, true, gender);
@@ -231,9 +233,39 @@ const broadcast = (room) => io.to(room.code).emit('room:state', serialize(room))
 
 function pushFeed(room, item) {
   item.ts = Date.now();
+  item.id = String((room.feedSeq = (room.feedSeq || 0) + 1));
   room.feed.push(item);
   if (room.feed.length > 40) room.feed.shift();
   io.to(room.code).emit('feed:new', item);
+  botSeen(room);
+  botReact(room, item);
+}
+/* v30 : les bots « voient » le salon (👁️ Vu) et réagissent parfois ❤️ */
+function botSeen(room) {
+  room.players.forEach(p => {
+    if (!p.isBot) return;
+    setTimeout(() => {
+      if (rooms.get(room.code) !== room || !room.feed.length) return;
+      const last = room.feed[room.feed.length - 1].id;
+      if (room.seen[p.name] === last) return;
+      room.seen[p.name] = last;
+      io.to(room.code).emit('feed:seen', { name: p.name, id: last });
+    }, 1200 + Math.random() * 3500);
+  });
+}
+function botReact(room, item) {
+  if (!item.mid || item.kind === 'sys' || item.kind === 'audio' || item.kind === 'answer-audio') return;
+  const bots = [...room.players.values()].filter(p => p.isBot);
+  if (!bots.length || Math.random() > 0.35) return;
+  const b = bots[Math.floor(Math.random() * bots.length)];
+  const emo = ['❤️', '😂', '🔥', '😮'][Math.floor(Math.random() * 4)];
+  setTimeout(() => {
+    if (rooms.get(room.code) !== room) return;
+    item.re = item.re || {};
+    const arr = item.re[emo] = item.re[emo] || [];
+    if (!arr.includes(b.name)) arr.push(b.name);
+    io.to(room.code).emit('feed:re', { id: item.id, re: item.re });
+  }, 2000 + Math.random() * 4000);
 }
 const sys = (room, text) => pushFeed(room, { kind: 'sys', text });
 
@@ -283,8 +315,8 @@ function beginChoosing(room) {
 let AI_MODELS = null, AI_MODELS_AT = 0;
 
 function aiWarn(room, msg) {
-  console.log('⚠️ IA :', msg);
-  if (room) { room.aiErr = msg; if (!room.aiWarned) { sys(room, '⚠️ ' + msg); room.aiWarned = true; } }
+  console.log('⚠️ IA (caché aux joueurs, retente au prochain tour) :', msg);
+  if (room) { room.aiErr = msg; }
 }
 
 async function pickModel() {
@@ -1146,9 +1178,9 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .panel h3 { font-size: 15px; margin-bottom: 10px; }
 .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 @media (min-width: 560px) { .grid6 { grid-template-columns: repeat(6, 1fr); } }
-.cell { position: relative; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 3px 6px; min-height: 46px; display: flex; flex-direction: column; gap: 1px; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; overflow: hidden; }
+.cell { position: relative; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 3px 4px; min-height: 36px; display: flex; flex-direction: column; gap: 1px; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; overflow: hidden; }
 .cell > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cell .num { position: absolute; top: 2px; left: 5px; font-size: 8px; color: var(--mut); }
+.cell .num { position: absolute; top: 1px; left: 4px; font-size: 7px; color: var(--mut); }
 .cell .dot { position: absolute; top: 3px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--hot); }
 .cell .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 .cell.empty { border-style: dashed; opacity: .45; }
@@ -1186,24 +1218,44 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 @keyframes pulse { 50% { transform: scale(1.04); } }
 .rea { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .rea button { font-size: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 5px 10px; cursor: pointer; }
-.feed { display: flex; flex-direction: column; gap: 7px; max-height: 34vh; overflow-y: auto; padding: 4px; }
-.chatpanel { display: flex; flex-direction: column; }
-.chathead { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); position: relative; }
-.chathead .chatlabel { font-size: 12.5px; font-weight: 900; color: var(--mut); letter-spacing: .6px; }
-.chathead #btn-media { position: absolute; right: 9px; padding: 6px 11px; }
-.chatbody { display: flex; flex-direction: column; gap: 7px; padding: 12px 11px; max-height: 34vh; overflow-y: auto; }
-.chatbar { display: flex; gap: 8px; align-items: center; padding: 9px 10px; border-top: 1px solid var(--line); }
-.chatinput { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; outline: none; }
+.feed { display: flex; flex-direction: column; gap: 7px; }
+/* ═══ v30 · VRAI INSTA : le salon EST l'écran ═══ */
+#s-game.on { display: flex; flex-direction: column; height: 100dvh; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+#s-game .wrap { flex: 1; min-height: 0; gap: 8px; margin: 8px auto 0; }
+#s-game #phase, #s-game #phasehint { display: none; }
+#qband { display: flex; align-items: center; gap: 9px; background: var(--card); border: 1px solid var(--hot); border-radius: 14px; padding: 8px 11px; margin-bottom: 8px; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+#qbadge { background: linear-gradient(135deg, var(--hot), var(--hot2)); color: #fff; font-weight: 900; font-size: 10.5px; letter-spacing: .5px; border-radius: 99px; padding: 4px 10px; white-space: nowrap; flex-shrink: 0; }
+#qtext2 { font-size: 13.5px; font-weight: 700; line-height: 1.35; min-width: 0; }
+#qwho { margin-left: auto; font-size: 10.5px; color: var(--mut); white-space: nowrap; flex-shrink: 0; }
+#stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#feedwrap { position: relative; flex: 1; min-height: 0; }
+.chatbody { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 4px 2px 8px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.feed { display: flex; flex-direction: column; gap: 7px; }
+#typing { position: absolute; bottom: 8px; left: 10px; z-index: 5; background: rgba(0,0,0,.55); color: #eee; font-size: 11.5px; padding: 5px 12px; border-radius: 99px; }
+.chatbar { display: flex; gap: 8px; align-items: center; padding: 8px 2px 2px; flex-shrink: 0; }
+.pillwrap { position: relative; flex: 1; min-width: 0; display: flex; }
+.chatinput { flex: 1; min-width: 0; padding: 11px 46px 11px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; outline: none; }
 .chatinput:focus { border-color: var(--hot); }
+#btn-media { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--card); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+#wheelzone { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, rgba(0,0,0,.18), rgba(0,0,0,.62)); border-radius: 16px; }
+#wheelzone .wheelinner { position: relative; width: min(70vw, 264px); }
+#stage #choice { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 6; }
+#stage #choice .btn { box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+#stage #spinrow { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 6; }
+#qcard { display: none; }
 .roundbtn { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg2); font-size: 18px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
 .roundbtn.send { background: linear-gradient(135deg, var(--hot), var(--hot2)); border: none; color: #fff; font-size: 16px; }
-.msg { max-width: 82%; background: var(--bg2); border: none; border-radius: 18px 18px 18px 6px; padding: 9px 12px; font-size: 14px; word-break: break-word; }
-.msg.mine { align-self: flex-end; background: linear-gradient(135deg, var(--hot), var(--hot2)); color: #fff; border-radius: 18px 18px 6px 18px; }
-.msg.mine .who { color: rgba(255,255,255,.85); }
-.msg.answer { box-shadow: 0 0 0 2px var(--ok); }
-.msg .who { font-size: 11px; color: var(--hot2); font-weight: 800; margin-bottom: 2px; }
-.msg.answer { border-color: var(--ok); }
-.msg.sys { align-self: center; background: transparent; border: none; color: var(--mut); font-size: 12px; text-align: center; }
+#mediaform:not([hidden]) { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 7; box-shadow: 0 14px 40px rgba(0,0,0,.55); }
+.msg { max-width: 82%; background: rgba(255,255,255,.9); color: #131313; border: none; border-radius: 16px; padding: 8px 12px; font-size: 14px; word-break: break-word; box-shadow: 0 2px 12px rgba(0,0,0,.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.msg.mine { align-self: flex-end; border-radius: 16px; }
+.msg.answer { box-shadow: 0 0 0 2px var(--ok), 0 2px 12px rgba(0,0,0,.28); }
+.msg .who { font-size: 11px; color: #9a9a9a; font-weight: 800; margin-bottom: 2px; }
+.msg.sys { align-self: center; background: rgba(255,255,255,.14); color: #ddd; font-size: 11.5px; padding: 4px 12px; text-align: center; box-shadow: none; }
+.res { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.res span { background: rgba(0,0,0,.08); border-radius: 99px; font-size: 11.5px; padding: 1px 7px; color: #333; font-weight: 700; }
+.seenrow { align-self: flex-end; font-size: 10.5px; color: var(--mut); margin-top: -3px; }
+#reactpop { position: fixed; z-index: 120; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 5px 7px; display: flex; gap: 2px; box-shadow: 0 12px 40px rgba(0,0,0,.65); }
+#reactpop button { border: none; background: transparent; font-size: 23px; padding: 4px 6px; cursor: pointer; }
 .audio { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 800; }
 .audio .p { width: 30px; height: 30px; border-radius: 50%; background: var(--hot); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; }
 #float { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
@@ -1226,7 +1278,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 29.3 · CHAT INSTA 📸</div>
+    <div class="ver">VERSION 30 · INSTA TOTAL 📸</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1323,12 +1375,14 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
   </div>
   <div class="wrap">
     <div class="grid6" id="game-grid"></div>
-    <div id="phase">…</div>
-    <div class="phasehint" id="phasehint"></div>
-    <div class="wheelzone" id="wheelzone">
-      <canvas id="wheel" width="560" height="560"></canvas>
-      <div class="pointer">▼</div>
+    <div id="phase" hidden>…</div>
+    <div class="phasehint" id="phasehint" hidden></div>
+    <div id="qband" hidden>
+      <span id="qbadge"></span>
+      <span id="qtext2"></span>
+      <span id="qwho"></span>
     </div>
+    <div id="stage">
     <div id="choice" hidden>
       <button id="btn-verite" class="btn v">💬 VÉRITÉ</button>
       <button id="btn-action" class="btn a">🎯 ACTION</button>
@@ -1341,11 +1395,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
       <button id="btn-spin" class="btn" style="font-size:17px;padding:14px 22px">🎯 LANCER LA ROUE !</button>
       <p class="hint" style="margin-top:5px">Tout le monde peut lancer — le premier clic gagne 😉</p>
     </div>
-    <div class="panel chatpanel" style="padding:0">
-      <div class="chathead">
-        <span class="chatlabel">💬 LE SALON</span>
-        <button id="btn-media" class="btn small" title="Photo / vidéo">📷</button>
-      </div>
+      <div id="feedwrap">
       <div id="feedbody" class="chatbody">
         <div id="mediaform" hidden style="border:1px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px">
           <p class="hint" style="margin-bottom:6px">📷 Photo (comprimée auto) ou 🎬 vidéo courte (max ~2 Mo)</p>
@@ -1359,12 +1409,34 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
         </div>
         <div class="feed" id="feed"></div>
       </div>
-      <div class="chatbar">
-        <input type="text" id="in-chat" class="chatinput" maxlength="300" placeholder="Message…">
-        <button id="mic" class="roundbtn" title="Vocal (30s)">🎤</button>
-        <button id="btn-chat" class="roundbtn send" title="Envoyer">➤</button>
+      <div id="typing" hidden></div>
       </div>
+      <div class="wheelzone" id="wheelzone">
+        <div class="wheelinner">
+          <canvas id="wheel" width="560" height="560"></canvas>
+          <div class="pointer">▼</div>
+        </div>
       </div>
+      <div id="choice" hidden>
+        <button id="btn-verite" class="btn v">💬 VÉRITÉ</button>
+        <button id="btn-action" class="btn a">🎯 ACTION</button>
+      </div>
+      <div id="qcard" hidden>
+        <div id="qtype"></div>
+        <div id="qtext"></div>
+      </div>
+      <div id="spinrow" hidden style="text-align:center;margin:0">
+        <button id="btn-spin" class="btn" style="font-size:17px;padding:14px 22px">🎯 LANCER LA ROUE !</button>
+        <p class="hint" style="margin-top:5px">Tout le monde peut lancer — le premier clic gagne 😉</p>
+      </div>
+    </div>
+    <div class="chatbar">
+      <div class="pillwrap">
+        <input type="text" id="in-chat" class="chatinput" maxlength="300" placeholder="Message…" autocomplete="off">
+        <button id="btn-media" title="Photo / vidéo">📷</button>
+      </div>
+      <button id="mic" class="roundbtn" title="Vocal (30s)">🎤</button>
+      <button id="btn-chat" class="roundbtn send" title="Envoyer">➤</button>
     </div>
   </div>
   <div id="float"></div>
@@ -1550,8 +1622,16 @@ socket.on('joined', function (d) {
   document.getElementById('feed').innerHTML = '';
   if (d && d.code) toast('✅ Salon ' + d.code + ' !');
 });
-socket.on('feed:init', function (d) { d.feed.forEach(addMsg); drawFeed(); });
+socket.on('feed:init', function (d) { items = []; seenMap = d.seen || {}; d.feed.forEach(addMsg); drawFeed(); });
 socket.on('feed:new', function (it) { addMsg(it); drawFeed(); });
+socket.on('feed:seen', function (d) { if (d && d.name) { seenMap[d.name] = d.id; renderSeen(); } });
+socket.on('feed:re', function (d) { for (var i = 0; i < items.length; i++) if (String(items[i].id) === String(d.id)) { items[i].re = d.re; break; } drawFeed(); });
+socket.on('feed:typing', function (d) {
+  var m = me(); if (!d || !d.name || (m && d.name === m.name)) return;
+  var t = $('#typing'); if (!t) return;
+  t.textContent = '✍️ ' + d.name + ' écrit…'; t.hidden = false;
+  clearTimeout(tyT); tyT = setTimeout(function () { t.hidden = true; }, 2600);
+});
 
 socket.on('room:state', function (st) {
   if (myPending) return;   /* en attente d approbation : on reste sur l écran d attente */
@@ -1725,6 +1805,16 @@ function renderGame() {
     $('#qtype').textContent = (t.ai ? '🤖 IA · ' : '') + (t.type === 'verite' ? 'VÉRITÉ 💬 — réponds sans mentir' : 'ACTION 🎯 — à toi d\u2019oser');
     $('#qtext').textContent = t.question;
   }
+  var qb = document.getElementById('qband');
+  if (qb) {
+    qb.hidden = !showQ;
+    if (showQ) {
+      var qb1 = document.getElementById('qbadge'), qb2 = document.getElementById('qtext2'), qb3 = document.getElementById('qwho');
+      if (qb1) qb1.textContent = (t.ai ? '🤖 IA · ' : '') + (t.type === 'verite' ? 'VÉRITÉ' : 'ACTION');
+      if (qb2) qb2.textContent = t.question;
+      if (qb3) qb3.textContent = isMe ? 'À toi !' : (tp ? tp.name : '?') + ' répond';
+    }
+  }
   var ic = $('#in-chat');
   if (ic) ic.placeholder = (S.phase === 'answering' && isMe && t && !t.answered) ? '💬 Ta réponse… (texte)' : 'Message…';
   $('#spinrow').hidden = S.phase !== 'reacting';
@@ -1884,8 +1974,9 @@ $('#btn-media-send').onclick = function () {
 function drawFeed() {
   var f = $('#feed'); if (!f) return;
   f.innerHTML = '';
-  items.slice().reverse().forEach(function (it) {
+  items.forEach(function (it) {           /* v30 : ordre Insta — anciens en haut, nouveaux EN BAS */
     var el = document.createElement('div');
+    if (it.id) el.dataset.id = it.id;
     if (it.kind === 'sys') { el.className = 'msg sys'; el.textContent = it.text; }
     else if (it.kind === 'audio' || it.kind === 'answer-audio') {
       el.className = 'msg' + (it.kind === 'answer-audio' ? ' answer' : '') + (it.mid === socket.id ? ' mine' : '');
@@ -1907,10 +1998,84 @@ function drawFeed() {
       var tx = document.createElement('span'); tx.textContent = it.text;
       el.appendChild(w2); el.appendChild(tx);
     }
+    if (!el.classList.contains('sys') && it.re) {
+      var rr = document.createElement('div'); rr.className = 'res';
+      for (var rk in it.re) if (it.re[rk] && it.re[rk].length) { var rs = document.createElement('span'); rs.textContent = rk + (it.re[rk].length > 1 ? ' ' + it.re[rk].length : ''); rr.appendChild(rs); }
+      if (rr.children.length) el.appendChild(rr);
+    }
     f.appendChild(el);
   });
-  f.scrollTop = 0;
+  renderSeen();
+  f.scrollTop = f.scrollHeight;           /* v30 : on suit le dernier message, comme Insta */
+  seenAck();
 }
+/* v30 · 👁️ « Vu » sous ton dernier message */
+function renderSeen() {
+  var f = $('#feed'); if (!f) return;
+  var old = f.querySelector('.seenrow'); if (old) old.remove();
+  var m = me(); if (!m || !S) return;
+  var lastMine = null;
+  for (var i = items.length - 1; i >= 0; i--) if (items[i].mid === socket.id && items[i].kind !== 'sys' && items[i].id) { lastMine = items[i]; break; }
+  if (!lastMine) return;
+  var who = [];
+  for (var n in seenMap) {
+    if (n === m.name || !seenMap[n]) continue;
+    if (+seenMap[n] < +lastMine.id) continue;
+    var inRoom = false;
+    for (var q = 0; q < S.players.length; q++) if (S.players[q].name === n) inRoom = true;
+    if (inRoom) who.push(n);
+  }
+  if (!who.length) return;
+  var d = document.createElement('div'); d.className = 'seenrow';
+  d.textContent = '👁️ Vu' + (who.length === 1 ? ' par ' + who[0] : ' · ' + who.length);
+  f.appendChild(d);
+}
+var seenMap = {}, tyT = null, lastAck = 0;
+function seenAck() {
+  if (!S) return;
+  var now = Date.now(); if (now - lastAck < 900) return; lastAck = now;
+  for (var i = items.length - 1; i >= 0; i--) if (items[i].id) { socket.emit('feed:seen'); return; }
+}
+
+/* ---------- v30 · Réactions Insta : appui long ou double-tap sur une bulle ---------- */
+var REP = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
+var rpEl = null, rpId = null, lpT = null, lpFired = false, dTapT = 0, dTapId = null;
+function closeReact() { if (rpEl) { rpEl.remove(); rpEl = null; } rpId = null; }
+function openReact(el, id) {
+  closeReact(); rpId = id;
+  rpEl = document.createElement('div'); rpEl.id = 'reactpop';
+  REP.forEach(function (e) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = e;
+    b.onclick = function (ev) { ev.stopPropagation(); socket.emit('chat:react', { id: rpId, emoji: e }); closeReact(); };
+    rpEl.appendChild(b);
+  });
+  document.body.appendChild(rpEl);
+  var r = el.getBoundingClientRect(), w = rpEl.offsetWidth || 230;
+  var x = Math.max(8, Math.min((window.innerWidth || 360) - w - 8, r.left + r.width / 2 - w / 2));
+  var y = Math.max(8, r.top - 56);
+  rpEl.style.left = x + 'px'; rpEl.style.top = y + 'px';
+}
+var feedEl = document.getElementById('feed');
+function feedMsgFrom(e) { var t = e.target; while (t && t !== feedEl) { if (t.classList && t.classList.contains('msg')) return t; t = t.parentElement; } return null; }
+if (feedEl) {
+  feedEl.addEventListener('contextmenu', function (e) { var m = feedMsgFrom(e); if (m && m.dataset.id && !m.classList.contains('sys')) { e.preventDefault(); openReact(m, m.dataset.id); } });
+  feedEl.addEventListener('touchstart', function (e) { var m = feedMsgFrom(e); if (!m || !m.dataset.id || m.classList.contains('sys')) return; lpFired = false; lpT = setTimeout(function () { lpT = null; lpFired = true; openReact(m, m.dataset.id); }, 430); }, { passive: true });
+  ['touchmove', 'touchcancel'].forEach(function (ev) { feedEl.addEventListener(ev, function () { if (lpT) { clearTimeout(lpT); lpT = null; } }, { passive: true }); });
+  feedEl.addEventListener('touchend', function (e) {
+    if (lpT) { clearTimeout(lpT); lpT = null; }
+    if (lpFired) { lpFired = false; return; }
+    if (rpEl) { closeReact(); return; }
+    var m = feedMsgFrom(e); if (!m || !m.dataset.id || m.classList.contains('sys')) return;
+    var now = Date.now();
+    if (dTapId === m.dataset.id && now - dTapT < 350) { socket.emit('chat:react', { id: m.dataset.id, emoji: '❤️' }); dTapT = 0; }
+    else { dTapT = now; dTapId = m.dataset.id; }
+  }, { passive: true });
+  feedEl.addEventListener('dblclick', function (e) { var m = feedMsgFrom(e); if (m && m.dataset.id && !m.classList.contains('sys')) socket.emit('chat:react', { id: m.dataset.id, emoji: '❤️' }); });
+}
+document.addEventListener('click', function (e) { if (rpEl && !(e.target.closest && e.target.closest('#reactpop'))) closeReact(); });
+/* ✍️ « … écrit » */
+var lastTy = 0;
+$('#in-chat').addEventListener('input', function () { var now = Date.now(); if (now - lastTy > 1400) { lastTy = now; socket.emit('chat:typing'); } });
 
 /* ---------- Micro ---------- */
 function pickMime() {
@@ -2160,7 +2325,7 @@ $('#mic').onclick = function () {
     </div>
   </div>
 </div>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v29.3</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v30</div>
 </body>
 </html>`;
 
@@ -2242,7 +2407,7 @@ io.on('connection', (socket) => {
       socket.join(room.code);
       socketRoom.set(socket.id, room);
       socket.emit('joined', { code: room.code });
-      io.to(socket.id).emit('feed:init', { feed: room.feed.slice(-40) });
+      io.to(socket.id).emit('feed:init', { feed: room.feed.slice(-40), seen: room.seen || {} });
       sys(room, name + ' est de retour 🔄');
       io.to(room.code).emit('player:back', { name });
       return broadcast(room);
@@ -2276,7 +2441,7 @@ io.on('connection', (socket) => {
     if (room.players.size >= MAX_PLAYERS) { io.to(id).emit('error:msg', { key: 'full' }); return; }
     addPlayer(room, sock, req.name, false, req.gender);
     sock.emit('joined', { code: room.code });
-    io.to(id).emit('feed:init', { feed: room.feed.slice(-40) });
+    io.to(id).emit('feed:init', { feed: room.feed.slice(-40), seen: room.seen || {} });
     broadcast(room);
   });
 
@@ -2336,6 +2501,35 @@ io.on('connection', (socket) => {
     const isAnswer = room.phase === 'answering' && room.turn && room.turn.targetId === socket.id && !room.turn.answered;
     if (isAnswer) { pushFeed(room, { kind: 'answer', mid: p.id, name: p.name, text: t }); beginReacting(room); }
     else pushFeed(room, { kind: 'text', mid: p.id, name: p.name, text: t });
+  });
+
+  /* ═══ v30 : Vu · réactions · « écrit… » ═══ */
+  socket.on('feed:seen', () => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const p = room.players.get(socket.id); if (!p) return;
+    if (!room.feed.length) return;
+    const last = room.feed[room.feed.length - 1].id;
+    if (room.seen[p.name] === last) return;
+    room.seen[p.name] = last;
+    io.to(room.code).emit('feed:seen', { name: p.name, id: last });
+  });
+  const RE_OK = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
+  socket.on('chat:react', ({ id, emoji } = {}) => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const p = room.players.get(socket.id); if (!p) return;
+    if (!RE_OK.includes(emoji)) return;
+    const it = room.feed.find(x => x.id === String(id)); if (!it) return;
+    it.re = it.re || {};
+    const arr = it.re[emoji] = it.re[emoji] || [];
+    const i = arr.indexOf(p.name);
+    if (i >= 0) arr.splice(i, 1); else arr.push(p.name);
+    if (!arr.length) delete it.re[emoji];
+    io.to(room.code).emit('feed:re', { id: it.id, re: it.re });
+  });
+  socket.on('chat:typing', () => {
+    const room = socketRoom.get(socket.id); if (!room) return;
+    const p = room.players.get(socket.id); if (!p) return;
+    socket.to(room.code).emit('feed:typing', { name: p.name });
   });
 
   socket.on('chat:audio', ({ b64, ms } = {}) => {
@@ -2431,7 +2625,7 @@ setInterval(() => {
 
 try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v29 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v30 — démarré sur le port', process.env.PORT || 3000);
   if (process.env.GROQ_API_KEY) {
     console.log('🤖 IA Groq : CLÉ TROUVÉE ✅ — questions illimitées (français + wolof)');
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
