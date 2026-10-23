@@ -220,6 +220,7 @@ function serialize(room) {
       type: room.turn.type || null,
       question: room.turn.question || null,
       deadline: room.turn.deadline || 0,
+      spinAt: room.turn.spinAt || 0,
       answered: !!room.turn.answered,
       ai: !!room.turn.ai,
     } : null,
@@ -288,8 +289,8 @@ function nextTurn(room) {
   const t = pick(cand);
   room.lastTargetId = t.id;
   room.phase = 'spinning';
-  room.turn = { targetId: t.id };
-  io.to(room.code).emit('wheel', { targetId: t.id, duration: SPIN_TIME });
+  room.turn = { targetId: t.id, spinAt: Date.now(), deadline: Date.now() + SPIN_TIME };
+  io.to(room.code).emit('wheel', { targetId: t.id, duration: SPIN_TIME, spinAt: room.turn.spinAt });
   room.timer = setTimeout(() => beginChoosing(room), SPIN_TIME);
   broadcast(room);
 }
@@ -1093,9 +1094,9 @@ function drawQuestion(room, type) {
   return bank[i];
 }
 
-function closeRoom(room) {
+function closeRoom(room, why) {
   clearTimer(room);
-  io.to(room.code).emit('room:closed');
+  io.to(room.code).emit('room:closed', { why: why || 'stop' });
   room.players.forEach((_, id) => socketRoom.delete(id));
   rooms.delete(room.code);
 }
@@ -1224,10 +1225,10 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 #s-game.active { display: flex; flex-direction: column; min-height: 100dvh; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
 #s-game .wrap { flex: 1; min-height: 0; gap: 8px; margin: 8px auto 0; }
 #s-game #phase, #s-game #phasehint { display: none; }
-#qband { display: flex; align-items: center; gap: 9px; background: var(--card); border: 1px solid var(--hot); border-radius: 14px; padding: 8px 11px; margin-bottom: 8px; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
-#qbadge { background: linear-gradient(135deg, var(--hot), var(--hot2)); color: #fff; font-weight: 900; font-size: 10.5px; letter-spacing: .5px; border-radius: 99px; padding: 4px 10px; white-space: nowrap; flex-shrink: 0; }
-#qtext2 { font-size: 13.5px; font-weight: 700; line-height: 1.35; min-width: 0; }
-#qwho { margin-left: auto; font-size: 10.5px; color: var(--mut); white-space: nowrap; flex-shrink: 0; }
+#qband { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--hot); border-radius: 15px; padding: 12px 14px; margin-bottom: 8px; flex-shrink: 0; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+#qbadge { background: linear-gradient(135deg, var(--hot), var(--hot2)); color: #fff; font-weight: 900; font-size: 11.5px; letter-spacing: .5px; border-radius: 99px; padding: 5px 12px; white-space: nowrap; flex-shrink: 0; }
+#qtext2 { font-size: 15px; font-weight: 700; line-height: 1.4; min-width: 0; }
+#qwho { margin-left: auto; font-size: 11px; color: var(--mut); white-space: nowrap; flex-shrink: 0; }
 #stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #feedwrap { position: relative; flex: 1; min-height: 200px; }
 .chatbody { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 4px 2px 8px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -1238,7 +1239,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
 .chatinput { flex: 1; min-width: 0; padding: 11px 46px 11px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg2); color: var(--txt); font-size: 15px; outline: none; }
 .chatinput:focus { border-color: var(--hot); }
 #btn-media { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--card); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-#wheelzone { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, rgba(0,0,0,.18), rgba(0,0,0,.62)); border-radius: 16px; }
+#wheelzone { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: transparent; pointer-events: none; } /* v30.3 : plus de voile noir — les messages restent visibles derrière la roue */
 #wheelzone .wheelinner { position: relative; width: min(62vw, 238px); }
 #stage #choice { position: absolute; left: 8px; right: 8px; bottom: 10px; z-index: 6; }
 #stage #choice .btn { box-shadow: 0 8px 30px rgba(0,0,0,.5); }
@@ -1279,7 +1280,7 @@ h1.title { font-size: 32px; font-weight: 900; background: linear-gradient(90deg,
     <div class="logo">🌶️</div>
     <h1 class="title">VÉRITÉ ou ACTION</h1>
     <div class="badge18">18+</div>
-    <div class="ver">VERSION 30 · INSTA TOTAL 📸</div>
+    <div class="ver">VERSION 30.3 · INSTA TOTAL 📸</div>
     <label class="check"><input type="checkbox" id="age18"> J'ai 18 ans ou plus 🍾</label>
     <div class="diffrow" id="genderrow">
       <button class="btn sel" data-g="homme">👨 Homme</button>
@@ -1642,12 +1643,12 @@ socket.on('room:state', function (st) {
   if (st.phase === 'lobby') { renderLobby(); show('s-lobby'); }
   else { renderGame(); show('s-game'); }
 });
-socket.on('wheel', function (d) { spin(d.targetId, d.duration || 4000); });
+socket.on('wheel', function (d) { lastSpinKey = (d.targetId || '') + ':' + (d.spinAt || 0); spin(d.targetId, d.duration || 4000); });
 socket.on('reaction', function (d) { float(d.emoji); });
 socket.on('player:offline', function (d) { toast('📴 ' + d.name + ' s\u2019est déconnecté !', true); });
 socket.on('player:back', function (d) { toast('🔄 ' + d.name + ' est revenu !'); });
 socket.on('media:new', function (it) { addMsg(it); drawFeed(); if (it.mid !== socket.id) toast('📷 ' + it.name + ' t\u2019a envoyé du contenu privé'); });
-socket.on('room:closed', function () { del('voa_code'); S = null; show('s-end'); });
+socket.on('room:closed', function (d) { del('voa_code'); S = null; myPending = null; if (d && d.why === 'parti') { show('s-home'); toast('🚪 Salon fermé — l\u2019autre joueur est parti'); } else show('s-end'); });
 
 /* ---------- Accueil : genre ---------- */
 var myGender = read('voa_gender') || 'homme';
@@ -1768,6 +1769,7 @@ if (location.hash.indexOf('#join/') === 0) { $('#in-code').value = location.hash
 
 /* ---------- Jeu ---------- */
 var PH = { choosing: 60000, answering: 120000, reacting: 20000 };
+var lastSpinKey = null;   /* v30.3 : garantit que la roue tourne chez TOUT le monde (admin, joueur, reconnexions) */
 function renderGame() {
   var m = me(); if (!m) return;
   $('#g-code').textContent = S.code;
@@ -1802,6 +1804,14 @@ function renderGame() {
   $('#choice').hidden = !(S.phase === 'choosing' && isMe);
   var wz = document.getElementById('wheelzone');
   if (wz) wz.hidden = S.phase !== 'spinning';   /* la roue se rétracte dès que la question arrive */
+  if (S.phase === 'spinning' && t && t.targetId) {          /* v30.3 : animation relancée localement si l'événement wheel a été raté */
+    var sk = t.targetId + ':' + (t.spinAt || 0);
+    if (sk !== lastSpinKey) {
+      lastSpinKey = sk;
+      var rem = t.deadline ? (t.deadline - Date.now()) : 4000;
+      spin(t.targetId, Math.max(1500, Math.min(rem || 4000, 4500)));
+    }
+  } else if (S.phase !== 'spinning') lastSpinKey = null;
   var showQ = !!(t && t.question && (S.phase === 'answering' || S.phase === 'reacting'));
   $('#qcard').hidden = !showQ;
   if (showQ) {
@@ -1815,7 +1825,7 @@ function renderGame() {
       var qb1 = document.getElementById('qbadge'), qb2 = document.getElementById('qtext2'), qb3 = document.getElementById('qwho');
       if (qb1) qb1.textContent = (t.ai ? '🤖 IA · ' : '') + (t.type === 'verite' ? 'VÉRITÉ' : 'ACTION');
       if (qb2) qb2.textContent = t.question;
-      if (qb3) qb3.textContent = isMe ? 'À toi !' : (tp ? tp.name : '?') + ' répond';
+      if (qb3) qb3.textContent = (t.ai ? '🤖 IA · ' : '') + (isMe ? 'À toi !' : (tp ? tp.name : '?') + ' répond');
     }
   }
   var ic = $('#in-chat');
@@ -1872,6 +1882,7 @@ function drawWheel() {
 function spin(targetId, duration) {
   if (wheelAnim) cancelAnimationFrame(wheelAnim);
   if (!S) return;
+  if (typeof requestAnimationFrame === 'undefined') { drawWheel(); return; }   /* v30.3 : vieux navigateurs / tests — pas de crash */
   var idx = -1;
   for (var i = 0; i < S.players.length; i++) if (S.players[i].id === targetId) idx = i;
   if (idx < 0) return;
@@ -2328,7 +2339,7 @@ $('#mic').onclick = function () {
     </div>
   </div>
 </div>
-<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v30.2</div>
+<div style="position:fixed;bottom:4px;right:7px;font-size:10px;opacity:.45;z-index:99;font-family:sans-serif">🌶️ v30.3</div>
 </body>
 </html>`;
 
@@ -2587,6 +2598,8 @@ io.on('connection', (socket) => {
   socket.on('room:leave', () => {
     const room = socketRoom.get(socket.id); if (!room) return;
     removePlayer(room, socket.id, false);
+    /* v30.3 : s'il ne reste qu'une personne (salon à 2), le salon se ferme → l'autre joueur retourne à l'accueil */
+    if (room.players.size <= 1) { closeRoom(room, 'parti'); return; }
     broadcast(room);
   });
 
@@ -2628,7 +2641,7 @@ setInterval(() => {
 
 try { module.exports = { QUESTIONS, WOLOF, drawQuestion }; } catch (e) {}
 server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
-  console.log('🌶️ Vérité ou Action v30 — démarré sur le port', process.env.PORT || 3000);
+  console.log('🌶️ Vérité ou Action v30.3 — démarré sur le port', process.env.PORT || 3000);
   if (process.env.GROQ_API_KEY) {
     console.log('🤖 IA Groq : CLÉ TROUVÉE ✅ — questions illimitées (français + wolof)');
     fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, signal: AbortSignal.timeout(8000) })
